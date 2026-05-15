@@ -1,0 +1,44 @@
+{
+  "include_title_keywords": [
+    "solutions engineer",
+    "forward deployed",
+    "ai engineer",
+    "machine learning engineer",
+    "data scientist",
+    "technical specialist",
+    "implementation engineer",
+    "ai specialist",
+    "ml engineer",
+    "product specialist",
+    "technical consultant",
+    "associate",
+    "analyst",
+    "decision analytics",
+    "data analyst",
+    "business analyst",
+    "business technology analyst"
+  ],
+  "exclude_title_keywords": [
+    "senior",
+    "staff",
+    "principal",
+    "director",
+    "manager",
+    "head of",
+    "vp ",
+    "vice president",
+    "lead "
+  ],
+  "include_level_keywords": [
+    "new grad",
+    "entry level",
+    "junior",
+    "associate",
+    "0-2 years",
+    "1-2 years",
+    "recent graduate",
+    "university graduate"
+  ],
+  "high_match_score_threshold": 90,
+  "locations": ["remote", "new york", "san francisco", "pittsburgh", "boston", "chicago", "seattle", "united states", "us"]
+}

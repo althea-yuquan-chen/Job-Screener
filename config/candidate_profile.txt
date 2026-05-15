@@ -1,0 +1,53 @@
+CANDIDATE PROFILE — Yuquan (Althea) Chen
+CMU MISM 2026 | Pittsburgh, PA
+Email: chenyuquan297@hotmail.com
+
+EDUCATION
+- Carnegie Mellon University — MS Information Systems Management (MISM), 2026
+- Nanjing University — Bachelor's degree
+
+CORE TECHNICAL SKILLS
+- Languages: Python (production-grade), SQL
+- AI/ML: LLM workflows, agentic systems (LangGraph, AutoGen, CrewAI), RAG, LangChain, prompt engineering
+- Data: Power BI, KNIME, pandas, scikit-learn, decision trees, uplift modeling
+- Engineering: API integration (authentication, rate limits, webhooks), GitHub, Django
+- Cloud/Infra: AWS basics, production deployment
+
+KEY EXPERIENCES
+
+1. Whelix (AI Engineer Intern, May 2026–present, Boston/Pittsburgh)
+   - Building end-to-end agentic systems for biotech/pharma lab automation
+   - Designing AI agents that integrate with enterprise APIs and robotics systems
+   - Working directly with CTO/CEO on architecture decisions
+
+2. BASF Digitalization Intern (June 2024–Feb 2025, Shanghai)
+   - Built LLM-based workflow to forecast MDI market demand from bilingual news articles
+   - Delivered automated executive-level weekly/monthly reports
+   - Developed plant equipment inspection system (floor-walk insights, cross-functional)
+   - Automated ICTP data pipelines; built Power BI dashboards for wide audiences
+   - Worked across production, EHS, supply chain, pricing, and business analysis
+
+3. Nanjing University Research Assistant (Sept 2023–June 2025)
+   - Co-authored survey on decision-focused learning (framed 100+ papers)
+   - Implemented novel uplift-modeling algorithm — 3% improvement on Criteo benchmark
+   - Delivered weekly literature briefings to 15-member lab
+
+4. Shanghai Baosight Software (Project Intern, Jan–Feb 2024)
+   - Built Python/SQLAlchemy data query system
+   - Decision tree and random forest models for classification
+
+PERSONAL PROJECTS
+- PromptPrompt: CLI tool that reduces LLM token costs by 65%
+
+STRENGTHS FOR MATCHING
+- Rare combination: can BUILD agentic/LLM systems AND communicate to business stakeholders
+- Enterprise context: BASF (Fortune 500) data work, cross-functional collaboration
+- Life sciences domain knowledge (Whelix biotech, BASF chemicals)
+- Bilingual: English (professional), Chinese (native) — valuable for APAC-facing roles
+- Strong track record of end-to-end ownership and independent delivery
+
+IDEAL ROLE CHARACTERISTICS
+- Bridges technical AI/ML systems with business outcomes
+- Enterprise software, AI-native companies, or data-heavy consulting
+- New grad / entry-level / associate level
+- Solutions Engineer, Forward Deployed Engineer, AI Implementation, Technical Consultant, Decision Analytics Associate
