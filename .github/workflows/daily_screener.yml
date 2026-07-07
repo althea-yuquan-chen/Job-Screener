@@ -46,10 +46,13 @@
 
 #       - name: Run job screener
 #         env:
-#           ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
-#           GOOGLE_CREDENTIALS_JSON:  ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
-#           GOOGLE_SHEET_ID:          ${{ secrets.GOOGLE_SHEET_ID }}
-#           GOOGLE_DRIVE_FOLDER_ID:   ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+#           ANTHROPIC_API_KEY:          ${{ secrets.ANTHROPIC_API_KEY }}
+#           GOOGLE_CREDENTIALS_JSON:    ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+#           GOOGLE_SHEET_ID:            ${{ secrets.GOOGLE_SHEET_ID }}
+#           GOOGLE_DRIVE_FOLDER_ID:     ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+#           GOOGLE_OAUTH_CLIENT_ID:     ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+#           GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+#           GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
 #         run: python src/main.py
 
 #       # Save seen-job-IDs so tomorrow's run skips today's jobs

@@ -1,21 +1,22 @@
 """
-drive.py — uploads tailored resume PDFs to a shared Google Drive folder.
+drive.py — uploads tailored resume PDFs to Althea's own Google Drive folder.
 
-Reuses the same service account as sheets.py (GOOGLE_CREDENTIALS_JSON), just
-with Drive scope. Althea owns the target folder and shares it with the
-service account as Editor (same pattern as the Sheet) — files the service
-account creates inside that folder are then already visible to her through
-the folder's own sharing, so no per-file public link is created (these PDFs
-contain personal contact/education/work history and shouldn't be made
-link-public).
+Service accounts cannot create new files in a personal (non-Workspace)
+Google Drive — they have no storage quota of their own, and Google requires
+either Shared Drives (a Workspace-only feature) or real OAuth user
+delegation instead. This was confirmed via a live 403 "storageQuotaExceeded"
+error during setup, not assumed — so this module authenticates as Althea
+herself via a pre-obtained OAuth refresh token (see
+scripts/get_drive_refresh_token.py for the one-time setup that produces it),
+rather than the service account used by sheets.py. Uploads count against
+her own Drive quota, and files land directly in her regular Drive.
 """
 
 import os
-import json
 import logging
 from pathlib import Path
 
-from google.oauth2.service_account import Credentials
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
@@ -25,17 +26,21 @@ SCOPES = ["https://www.googleapis.com/auth/drive.file"]
 
 
 def _get_service():
-    creds_json = os.environ["GOOGLE_CREDENTIALS_JSON"]
-    creds_dict = json.loads(creds_json)
-    creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+    creds = Credentials(
+        token=None,
+        refresh_token=os.environ["GOOGLE_OAUTH_REFRESH_TOKEN"],
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=os.environ["GOOGLE_OAUTH_CLIENT_ID"],
+        client_secret=os.environ["GOOGLE_OAUTH_CLIENT_SECRET"],
+        scopes=SCOPES,
+    )
     return build("drive", "v3", credentials=creds)
 
 
 def upload_resume(pdf_path: Path, filename: str) -> str | None:
     """
-    Uploads a tailored resume PDF into the shared Drive folder.
-    Returns a Drive view link (accessible to whoever the folder is shared
-    with — no public link is created), or None if the upload failed.
+    Uploads a tailored resume PDF into Althea's Drive folder.
+    Returns a Drive view link, or None if the upload failed.
     """
     folder_id = os.environ.get("GOOGLE_DRIVE_FOLDER_ID")
     if not folder_id:

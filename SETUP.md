@@ -69,6 +69,15 @@ every strong match, and writes everything to Google Sheets.
 
 ## Step 3 — Set up Google Cloud (for Sheets + Drive)
 
+Two different auth mechanisms are used here, for a specific reason: a
+service account can read/write an existing Google Sheet just fine, but it
+**cannot create new files** (like a tailored resume PDF) in a personal
+Google Drive — service accounts have no storage quota of their own, and
+Google requires either a paid Workspace "Shared Drive" or real OAuth user
+delegation instead (this was hit as a live 403 `storageQuotaExceeded` error
+during setup, not a theoretical concern). So: **Sheets uses a service
+account** (Step 3c), and **Drive uses OAuth as yourself** (Step 3e).
+
 ### 3a. Create a Google Cloud project
 
 1. Go to https://console.cloud.google.com
@@ -83,7 +92,7 @@ every strong match, and writes everything to Google Sheets.
    - **Google Sheets API**
    - **Google Drive API**
 
-### 3c. Create a Service Account
+### 3c. Create a Service Account (for Sheets)
 
 1. Go to **APIs & Services → Credentials**
 2. Click **+ Create Credentials → Service Account**
@@ -98,7 +107,24 @@ every strong match, and writes everything to Google Sheets.
 On the service account page, copy the email — it looks like:
 `job-screener-bot@job-screener-XXXXX.iam.gserviceaccount.com`
 
-You'll need this in Step 4.
+You'll need this in Step 4a (for the Sheet only — not the Drive folder).
+
+### 3e. Create an OAuth Client (for Drive)
+
+1. Still on **APIs & Services → Credentials**, click **+ Create Credentials → OAuth client ID**
+2. If prompted, configure the **OAuth consent screen** first:
+   - User type: **External**
+   - Add the `drive.file` scope
+   - **Publishing status: "In Production"** — not "Testing". Testing-status refresh tokens expire after 7 days, which would silently break the daily automation about a week in.
+   - You (and anyone else who uses it) will see an "unverified app" warning when logging in — that's expected for a personal single-user tool; click **Advanced → Go to [app name] (unsafe)** to proceed. This doesn't require Google's formal app review since it's just for your own use.
+3. Back on Create Credentials → OAuth client ID: Application type **Desktop app**, name it anything → **Create**
+4. Copy the **Client ID** and **Client Secret** it shows you
+5. Run the one-time local script to turn those into a refresh token:
+   ```bash
+   pip install google-auth-oauthlib
+   python scripts/get_drive_refresh_token.py
+   ```
+   It'll ask for the Client ID/Secret, open a browser for you to log in and grant access, then print three values — `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_OAUTH_REFRESH_TOKEN` — save all three for Step 5.
 
 ---
 
@@ -118,12 +144,11 @@ You'll need this in Step 4.
 ### 4b. Drive folder (tailored resume PDFs)
 
 1. Go to https://drive.google.com and create a new folder, e.g. `Job Screener — Tailored Resumes`
-2. Share it with your service account email (same as above — **Editor** access)
+2. No sharing needed — the OAuth setup in Step 3e authenticates as you, so anything created in your own Drive is already yours.
 3. Open the folder and copy its **Folder ID** from the URL:
    ```
    https://drive.google.com/drive/folders/YOUR_FOLDER_ID_IS_HERE
    ```
-4. Because the folder is shared with you (its owner) and the service account, PDFs the bot uploads inside it are automatically visible to you too — no public link is ever created.
 
 ---
 
@@ -138,6 +163,9 @@ You'll need this in Step 4.
 | `GOOGLE_CREDENTIALS_JSON` | The entire contents of the `.json` file from Step 3c |
 | `GOOGLE_SHEET_ID` | The Sheet ID from Step 4a |
 | `GOOGLE_DRIVE_FOLDER_ID` | The Drive folder ID from Step 4b |
+| `GOOGLE_OAUTH_CLIENT_ID` | From Step 3e |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | From Step 3e |
+| `GOOGLE_OAUTH_REFRESH_TOKEN` | From Step 3e |
 
 For `GOOGLE_CREDENTIALS_JSON`: open the downloaded `.json` file in a text editor,
 select all, copy, paste as the secret value.
@@ -245,7 +273,7 @@ In `.github/workflows/daily_screener.yml`, change `1-5` to `*` in the cron line.
 
 **Sheet not updating** → Confirm the service account email has Editor access to the sheet
 
-**No tailored resume PDFs / Drive links** → Confirm `GOOGLE_DRIVE_FOLDER_ID` is set and the folder is shared with the service account as Editor; check the Actions log for `pdflatex`/Drive upload errors
+**No tailored resume PDFs / Drive links** → Confirm `GOOGLE_DRIVE_FOLDER_ID`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `GOOGLE_OAUTH_REFRESH_TOKEN` are all set; check the Actions log for `pdflatex`/Drive upload errors. A sudden `invalid_grant` error usually means the OAuth consent screen was left in "Testing" status and the refresh token expired after 7 days — switch it to "In Production" and re-run `scripts/get_drive_refresh_token.py`.
 
 **Very few or zero jobs found** → `src/discover.py` depends on the public SimplifyJobs feed being reachable; check the Actions log for a fetch warning
 
