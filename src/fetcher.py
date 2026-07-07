@@ -182,6 +182,25 @@ def fetch_workday_description(job: dict) -> str:
         return ""
 
 
+def fetch_workday_descriptions(jobs: list[dict], max_workers: int = 10) -> None:
+    """
+    Enriches Workday jobs in-place with full JD text, concurrently. A real
+    test run showed ~861 jobs takes ~8 minutes fetched one at a time —
+    parallelizing this the same way as fetch_all_companies cuts that down.
+    Call only on jobs that already survived the keyword filter (see
+    fetch_workday_description's docstring for why).
+    """
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(fetch_workday_description, j): j for j in jobs}
+        for future in as_completed(futures):
+            job = futures[future]
+            try:
+                job["description"] = future.result()
+            except Exception as e:
+                logger.warning(f"Workday description enrichment failed for {job.get('company')} — {job.get('title')}: {e}")
+                job["description"] = ""
+
+
 # ── Dispatcher ────────────────────────────────────────────────────────────────
 
 def fetch_jobs_for_company(company: dict) -> list[dict]:

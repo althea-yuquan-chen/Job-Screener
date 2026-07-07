@@ -103,6 +103,12 @@ Score this candidate-job fit. Remember: respond ONLY with the JSON object.
             job["summary"]       = result.get("summary", "")
             return job
 
+        except anthropic.AuthenticationError as e:
+            # Not transient -- a bad/revoked key will fail identically on every
+            # retry and every subsequent job. Fail the whole run immediately and
+            # loudly instead of burning through retries for all N jobs and
+            # silently writing score=0 to every row.
+            raise RuntimeError(f"Anthropic API authentication failed (invalid API key?): {e}") from e
         except json.JSONDecodeError as e:
             logger.warning(f"JSON parse error on attempt {attempt+1} for {job['title']}: {e}")
             time.sleep(2)

@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 # ── Local imports ─────────────────────────────────────────────────────────────
 sys.path.insert(0, str(Path(__file__).parent))
 from discover  import get_companies
-from fetcher   import fetch_all_companies, fetch_workday_description
+from fetcher   import fetch_all_companies, fetch_workday_descriptions
 from filter    import passes_keyword_filter, deduplicate
 from scorer    import score_jobs_batch
 from tailor    import tailor_resume
@@ -89,8 +89,7 @@ def run():
     workday_jobs = [j for j in new_jobs if j.get("ats") == "workday"]
     if workday_jobs:
         logger.info(f"Fetching full descriptions for {len(workday_jobs)} Workday postings...")
-        for j in workday_jobs:
-            j["description"] = fetch_workday_description(j)
+        fetch_workday_descriptions(workday_jobs)
 
     # ── Step 6: AI scoring ────────────────────────────────────────────────────
     logger.info(f"\nScoring {len(new_jobs)} jobs with Claude API...")
