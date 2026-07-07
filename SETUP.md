@@ -1,11 +1,13 @@
 # Job Screener — Setup Guide
 
-This runs every weekday morning, checks 26 target companies for new job postings,
-scores them against your profile with Claude AI, writes results to Google Sheets,
-and emails you when something scores 90%+.
+This runs every weekday morning, discovers new-grad job postings across ~350+
+companies (auto-discovered daily from a public new-grad job feed, plus a
+small curated list of AI-native and consulting companies), scores each one
+against your profile with Claude AI, generates a tailored resume PDF for
+every strong match, and writes everything to Google Sheets.
 
-**Time to set up: ~45 minutes (one-time)**
-**Ongoing cost: ~$1–3/month in Claude API credits**
+**Time to set up: ~30 minutes (one-time)**
+**Ongoing cost: ~$10–50/month in Claude API credits, depending on daily volume**
 
 ---
 
@@ -28,15 +30,19 @@ and emails you when something scores 90%+.
    ├── .github/workflows/daily_screener.yml
    ├── src/
    │   ├── main.py
+   │   ├── discover.py
    │   ├── fetcher.py
    │   ├── filter.py
    │   ├── scorer.py
-   │   ├── sheets.py
-   │   └── notifier.py
+   │   ├── tailor.py
+   │   ├── drive.py
+   │   └── sheets.py
    ├── config/
-   │   ├── companies.json
+   │   ├── companies_supplemental.json
    │   ├── filters.json
    │   └── candidate_profile.txt
+   ├── resume/
+   │   └── resume.tex
    └── requirements.txt
    ```
 
@@ -61,9 +67,7 @@ and emails you when something scores 90%+.
 
 ---
 
-## Step 3 — Set up Google Cloud (for Sheets + Gmail)
-
-This is the most involved step. Follow carefully.
+## Step 3 — Set up Google Cloud (for Sheets + Drive)
 
 ### 3a. Create a Google Cloud project
 
@@ -77,7 +81,7 @@ This is the most involved step. Follow carefully.
 1. Go to **APIs & Services → Library**
 2. Search for and enable each of these (click each → Enable):
    - **Google Sheets API**
-   - **Gmail API**
+   - **Google Drive API**
 
 ### 3c. Create a Service Account
 
@@ -96,38 +100,30 @@ On the service account page, copy the email — it looks like:
 
 You'll need this in Step 4.
 
-### 3e. Enable Gmail domain-wide delegation
-
-Since Gmail API requires impersonation:
-
-1. Go to https://admin.google.com (if you use Google Workspace)
-   - OR: for personal Gmail, skip domain-wide delegation and instead:
-   - Go to **APIs & Services → OAuth consent screen**
-   - Set to **External**, fill in app name `job-screener`, add your email as test user
-   - Back in Credentials: create an **OAuth 2.0 Client ID** (Desktop app type)
-   - Download the OAuth client JSON
-
-> **Simplest option for personal Gmail:** Use **SendGrid** or **Mailgun** free tier
-> instead of Gmail API (10,000 emails/month free). If you'd prefer this, let me
-> know and I'll swap the notifier to use SMTP instead — much simpler setup.
-
 ---
 
-## Step 4 — Create the Google Sheet
+## Step 4 — Create the Google Sheet and Drive folder
 
-1. Go to https://sheets.google.com
-2. Create a new blank spreadsheet
-3. Name it `Job Screener — Results`
-4. Create a sheet tab named **Jobs** (rename Sheet1)
-5. Share the sheet with your service account email from Step 3d:
-   - Click **Share** (top right)
-   - Paste the service account email
-   - Role: **Editor**
-   - Click **Send**
-6. Copy the **Sheet ID** from the URL:
+### 4a. Google Sheet (job results)
+
+1. Go to https://sheets.google.com and create a new blank spreadsheet
+2. Name it `Job Screener — Results`
+3. Create a sheet tab named **Jobs** (rename Sheet1)
+4. Share the sheet with your service account email from Step 3d (**Share** → paste email → **Editor** → **Send**)
+5. Copy the **Sheet ID** from the URL:
    ```
    https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID_IS_HERE/edit
    ```
+
+### 4b. Drive folder (tailored resume PDFs)
+
+1. Go to https://drive.google.com and create a new folder, e.g. `Job Screener — Tailored Resumes`
+2. Share it with your service account email (same as above — **Editor** access)
+3. Open the folder and copy its **Folder ID** from the URL:
+   ```
+   https://drive.google.com/drive/folders/YOUR_FOLDER_ID_IS_HERE
+   ```
+4. Because the folder is shared with you (its owner) and the service account, PDFs the bot uploads inside it are automatically visible to you too — no public link is ever created.
 
 ---
 
@@ -140,8 +136,8 @@ Since Gmail API requires impersonation:
 |---|---|
 | `ANTHROPIC_API_KEY` | Your Anthropic key from Step 2 |
 | `GOOGLE_CREDENTIALS_JSON` | The entire contents of the `.json` file from Step 3c |
-| `GOOGLE_SHEET_ID` | The Sheet ID from Step 4 |
-| `ALERT_EMAIL` | Your Gmail address (e.g. `chenyuquan297@hotmail.com`) |
+| `GOOGLE_SHEET_ID` | The Sheet ID from Step 4a |
+| `GOOGLE_DRIVE_FOLDER_ID` | The Drive folder ID from Step 4b |
 
 For `GOOGLE_CREDENTIALS_JSON`: open the downloaded `.json` file in a text editor,
 select all, copy, paste as the secret value.
@@ -153,9 +149,8 @@ select all, copy, paste as the secret value.
 1. In your GitHub repo, go to **Actions**
 2. Click **Daily Job Screener** in the left sidebar
 3. Click **Run workflow → Run workflow** (green button)
-4. Watch the logs — it should take 5–15 minutes
-5. Check your Google Sheet for results
-6. If 90%+ matches are found, check your email
+4. Watch the logs — with ~350+ companies this takes longer than a small run; give it up to an hour
+5. Check your Google Sheet for results, and your Drive folder for tailored resume PDFs on strong matches
 
 ---
 
@@ -169,13 +164,31 @@ the next scheduled run listed.
 
 ---
 
+## How company discovery works
+
+Unlike a hand-picked company list, `src/discover.py` pulls a fresh copy of the
+public [SimplifyJobs/New-Grad-Positions](https://github.com/SimplifyJobs/New-Grad-Positions)
+dataset every run, and automatically finds every currently-active listing
+hosted on Greenhouse, Lever, or Workday (the three ATS platforms this project
+can pull full job descriptions from) — typically 300+ companies. This is
+merged with a small hand-picked list in `config/companies_supplemental.json`
+(AI-native and consulting companies the public feed doesn't reliably tag).
+
+**You don't need to maintain a company list.** If you want to permanently
+add a specific company regardless of what the feed picks up, add it to
+`config/companies_supplemental.json` in the same `{"name", "ats", "id", "tier"}`
+format (Workday entries also need a `"workday_url"` — the fully resolved CXS
+API URL for that tenant).
+
+---
+
 ## Understanding the Google Sheet columns
 
 | Column | Description |
 |---|---|
 | Date Found | When the screener found this job |
 | Score | AI match score 0–100 |
-| Tier | P1 (AI roles), P2 (tech consulting), P3 (MBB) |
+| Tier | Set only for curated supplemental companies (P1 AI/Agent, P2 Tech Consulting, P3 MBB Stretch) — blank for feed-discovered companies |
 | Company | Company name |
 | Title | Job title |
 | Location | Location or Remote |
@@ -186,15 +199,20 @@ the next scheduled run listed.
 | Posted Date | When the job was posted |
 | Job ID | Internal ID (used for deduplication) |
 | ATS | Which platform (Greenhouse/Lever/Workday) |
+| Tailored Resume | Drive link to a tailored resume PDF — only populated for jobs scoring 65+ |
+| Source | "New-Grad Feed" (auto-discovered) or "Curated" (from the supplemental list) |
+
+There's no email alert step — check the Sheet directly whenever you want to apply.
 
 ---
 
 ## Customizing
 
-**Add a new company:**
-Edit `config/companies.json`. You need to know which ATS they use:
-- Check if their careers URL contains `greenhouse.io`, `lever.co`, or `myworkday.com`
-- Find the company ID in their careers URL (e.g. `boards.greenhouse.io/COMPANY_ID`)
+**Add a permanent company regardless of the feed:**
+Edit `config/companies_supplemental.json` (see "How company discovery works" above).
+
+**Change which feed categories count:**
+Edit `RELEVANT_CATEGORIES` in `src/discover.py`.
 
 **Change keyword filters:**
 Edit `config/filters.json` — add/remove title keywords or locations.
@@ -202,8 +220,11 @@ Edit `config/filters.json` — add/remove title keywords or locations.
 **Update your profile:**
 Edit `config/candidate_profile.txt` as your experience grows.
 
-**Change email threshold:**
-In `src/notifier.py`, change `HIGH_SCORE_THRESHOLD = 90` to any value.
+**Update your resume template:**
+Edit `resume/resume.tex` — every tailored resume is generated from this file, so keep it current.
+
+**Change the tailored-resume score threshold:**
+In `src/main.py`, change `TAILOR_SCORE_THRESHOLD = 65` to any value.
 
 **Run on weekends too:**
 In `.github/workflows/daily_screener.yml`, change `1-5` to `*` in the cron line.
@@ -212,10 +233,9 @@ In `.github/workflows/daily_screener.yml`, change `1-5` to `*` in the cron line.
 
 ## Estimated costs
 
-- **GitHub Actions:** Free (2,000 minutes/month on free tier; each run ~10 min)
-- **Claude API:** ~$0.05–0.15 per run (depends on jobs found; ~30–100 scored jobs/day)
+- **GitHub Actions:** Free tier is 2,000 minutes/month; each run can now take significantly longer than before (~350+ companies vs. the original 26) — monitor your usage in **Settings → Billing**.
+- **Claude API:** scales with daily volume — roughly $10–50/month depending on how many jobs clear the keyword filter and how many get tailored resumes (each tailored resume is a second Claude call).
 - **Google APIs:** Free (well within free tier limits)
-- **Total: ~$1–5/month** starting in July when postings pick up
 
 ---
 
@@ -225,8 +245,10 @@ In `.github/workflows/daily_screener.yml`, change `1-5` to `*` in the cron line.
 
 **Sheet not updating** → Confirm the service account email has Editor access to the sheet
 
-**Greenhouse returning 0 jobs** → The company ID may be wrong; check their careers URL
+**No tailored resume PDFs / Drive links** → Confirm `GOOGLE_DRIVE_FOLDER_ID` is set and the folder is shared with the service account as Editor; check the Actions log for `pdflatex`/Drive upload errors
 
-**Email not sending** → Gmail API setup is complex; consider switching to SMTP (let me know)
+**Very few or zero jobs found** → `src/discover.py` depends on the public SimplifyJobs feed being reachable; check the Actions log for a fetch warning
 
 **Score always 0** → Check `ANTHROPIC_API_KEY` is set correctly in GitHub Secrets
+
+**Workflow times out** → With ~350+ companies this run is much bigger than before; the timeout is already raised to 90 minutes, but if you add many more companies to the supplemental list you may need to raise it further

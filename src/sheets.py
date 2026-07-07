@@ -28,9 +28,12 @@ SHEET_COLUMNS = [
     "Posted Date",
     "Job ID",
     "ATS",
+    "Tailored Resume",
+    "Source",
 ]
 
 TIER_LABELS = {1: "P1 — AI/Agent", 2: "P2 — Tech Consulting", 3: "P3 — MBB Stretch"}
+SOURCE_LABELS = {"feed": "New-Grad Feed", "supplemental": "Curated", "unknown": ""}
 
 
 def _get_service():
@@ -63,7 +66,7 @@ def ensure_header(service):
     try:
         result = service.spreadsheets().values().get(
             spreadsheetId=_get_sheet_id(),
-            range="Jobs!A1:M1"
+            range="Jobs!A1:O1"
         ).execute()
         if not result.get("values"):
             service.spreadsheets().values().update(
@@ -98,7 +101,9 @@ def append_jobs(jobs: list[dict]) -> int:
 
         match_reasons = " | ".join(job.get("match_reasons", []))
         concerns      = " | ".join(job.get("concerns", []))
-        tier_label    = TIER_LABELS.get(job.get("tier", 0), str(job.get("tier", "")))
+        tier = job.get("tier")
+        tier_label = TIER_LABELS.get(tier, "") if tier is not None else ""
+        source_label = SOURCE_LABELS.get(job.get("company_source", "unknown"), "")
 
         row = [
             today,
@@ -114,6 +119,8 @@ def append_jobs(jobs: list[dict]) -> int:
             job.get("posted_at", ""),
             job_id,
             job.get("ats", ""),
+            job.get("resume_link", ""),
+            source_label,
         ]
         rows.append(row)
 

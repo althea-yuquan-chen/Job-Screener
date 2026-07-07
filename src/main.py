@@ -2,12 +2,17 @@
 main.py — daily job screener orchestrator.
 
 Flow:
-  1. Load company list
-  2. Fetch all job listings from each company's ATS
+  1. Discover companies dynamically (SimplifyJobs feed + supplemental list)
+  2. Fetch all job listings from each company's ATS, in parallel
   3. Keyword pre-filter (fast, free)
-  4. AI score remaining jobs against candidate profile (Claude API)
-  5. Write all scored jobs to Google Sheet (deduped)
-  6. Send email alert for jobs scoring 90+
+  4. Deduplicate against previously-seen jobs
+  5. Enrich Workday survivors with full JD text (deferred — one request per
+     company for the list, but description text needs a per-job request)
+  6. AI score remaining jobs against candidate profile (Claude API)
+  7. For jobs scoring high enough: generate a tailored resume PDF and upload
+     it to Drive
+  8. Write all scored jobs to Google Sheet (deduped), with a resume link for
+     the tailored ones
 """
 
 import json
@@ -26,16 +31,17 @@ logger = logging.getLogger(__name__)
 
 # ── Local imports ─────────────────────────────────────────────────────────────
 sys.path.insert(0, str(Path(__file__).parent))
-from fetcher   import fetch_jobs_for_company
+from discover  import get_companies
+from fetcher   import fetch_all_companies, fetch_workday_description
 from filter    import passes_keyword_filter, deduplicate
 from scorer    import score_jobs_batch
+from tailor    import tailor_resume
+from drive     import upload_resume
 from sheets    import append_jobs
-from notifier  import send_alert
 
-# ── Config paths ──────────────────────────────────────────────────────────────
-CONFIG_DIR   = Path(__file__).parent.parent / "config"
-COMPANIES    = json.loads((CONFIG_DIR / "companies.json").read_text())
+# ── Config ─────────────────────────────────────────────────────────────────────
 SEEN_IDS_FILE = Path(__file__).parent.parent / ".seen_job_ids.json"
+TAILOR_SCORE_THRESHOLD = 65  # jobs scoring at/above this get a tailored resume + Drive upload
 
 
 def load_seen_ids() -> set:
@@ -55,21 +61,19 @@ def run():
 
     seen_ids = load_seen_ids()
 
-    # ── Step 1: Fetch ─────────────────────────────────────────────────────────
-    all_jobs = []
-    for company in COMPANIES:
-        logger.info(f"Fetching: {company['name']} ({company['ats'].upper()})")
-        jobs = fetch_jobs_for_company(company)
-        logger.info(f"  → {len(jobs)} postings found")
-        all_jobs.extend(jobs)
+    # ── Step 1: Discover companies ────────────────────────────────────────────
+    companies = get_companies()
 
+    # ── Step 2: Fetch (parallel) ───────────────────────────────────────────────
+    logger.info(f"Fetching postings from {len(companies)} companies...")
+    all_jobs = fetch_all_companies(companies)
     logger.info(f"\nTotal raw postings fetched: {len(all_jobs)}")
 
-    # ── Step 2: Keyword pre-filter ────────────────────────────────────────────
+    # ── Step 3: Keyword pre-filter ────────────────────────────────────────────
     keyword_passed = [j for j in all_jobs if passes_keyword_filter(j)]
     logger.info(f"After keyword filter: {len(keyword_passed)} postings")
 
-    # ── Step 3: Deduplicate (skip jobs we've scored before) ───────────────────
+    # ── Step 4: Deduplicate (skip jobs we've scored before) ───────────────────
     new_jobs, seen_ids = deduplicate(keyword_passed, seen_ids)
     logger.info(f"New (not previously seen): {len(new_jobs)} postings")
 
@@ -78,7 +82,17 @@ def run():
         save_seen_ids(seen_ids)
         return
 
-    # ── Step 4: AI scoring ────────────────────────────────────────────────────
+    # ── Step 5: Enrich Workday survivors with full JD text ────────────────────
+    # Workday's list endpoint doesn't include description text (unlike
+    # Greenhouse/Lever) — fetching it is one extra request per job, so this
+    # only runs on jobs that already survived the keyword filter + dedupe.
+    workday_jobs = [j for j in new_jobs if j.get("ats") == "workday"]
+    if workday_jobs:
+        logger.info(f"Fetching full descriptions for {len(workday_jobs)} Workday postings...")
+        for j in workday_jobs:
+            j["description"] = fetch_workday_description(j)
+
+    # ── Step 6: AI scoring ────────────────────────────────────────────────────
     logger.info(f"\nScoring {len(new_jobs)} jobs with Claude API...")
     scored_jobs = score_jobs_batch(new_jobs)
 
@@ -89,25 +103,30 @@ def run():
     for j in scored_jobs[:10]:
         logger.info(f"  {j['score']:3d}%  [{j['company']}]  {j['title']}  ({j['location']})")
 
-    high_score_count = sum(1 for j in scored_jobs if j.get("score", 0) >= 90)
-    logger.info(f"\nJobs scoring 90%+: {high_score_count}")
+    tailor_candidates = [j for j in scored_jobs if j.get("score", 0) >= TAILOR_SCORE_THRESHOLD]
+    logger.info(f"\nJobs scoring {TAILOR_SCORE_THRESHOLD}+ (will get tailored resumes): {len(tailor_candidates)}")
 
-    # ── Step 5: Write to Google Sheet ─────────────────────────────────────────
+    # ── Step 7: Tailor + upload resumes for high-scoring matches ──────────────
+    for j in tailor_candidates:
+        pdf_path = tailor_resume(j)
+        if not pdf_path:
+            j["resume_link"] = ""
+            continue
+        filename = f"{j['company']} — {j['title']}.pdf".replace("/", "-")
+        link = upload_resume(pdf_path, filename)
+        j["resume_link"] = link or ""
+
+    # ── Step 8: Write to Google Sheet ──────────────────────────────────────────
     logger.info("\nWriting to Google Sheet...")
     rows_written = append_jobs(scored_jobs)
     logger.info(f"Rows written: {rows_written}")
-
-    # ── Step 6: Email alert ───────────────────────────────────────────────────
-    if high_score_count > 0:
-        logger.info("Sending email alert for high-score matches...")
-        send_alert(scored_jobs)
 
     # ── Save seen IDs ─────────────────────────────────────────────────────────
     save_seen_ids(seen_ids)
 
     logger.info("\n" + "=" * 60)
     logger.info(f"Done. {len(scored_jobs)} jobs scored, {rows_written} written, "
-                f"{high_score_count} alerts sent.")
+                f"{len(tailor_candidates)} tailored resumes generated.")
     logger.info("=" * 60)
 
 

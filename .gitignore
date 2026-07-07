@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.venv/
+.seen_job_ids.json
+
+# Raw LinkedIn export — already distilled into resume/content_bank.json;
+# no need to keep the raw personal-data dump in the repo.
+linkedin profile.txt
+
+# LaTeX build artifacts
+resume/*.aux
+resume/*.log
+resume/*.out
+
+# Per-job tailored resumes are ephemeral output (delivered via Google Drive),
+# not source — don't commit them.
+resume/tailored/

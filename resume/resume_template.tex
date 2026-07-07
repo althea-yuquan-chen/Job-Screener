@@ -1,0 +1,113 @@
+\documentclass[letterpaper,11pt]{article}
+
+% ── Packages ──────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[left=0.5in, right=0.5in, top=0.2in, bottom=0.2in]{geometry}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+% ── Colours ───────────────────────────────────────────────────────────────────
+\definecolor{navy}{RGB}{28, 57, 100}
+\definecolor{rulecol}{RGB}{28, 57, 100}
+
+% ── Hyperlink setup ───────────────────────────────────────────────────────────
+\hypersetup{
+  colorlinks=true,
+  urlcolor=navy,
+  linkcolor=black
+}
+
+% ── Page style ────────────────────────────────────────────────────────────────
+\pagestyle{empty}
+\raggedbottom
+\raggedright
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+
+% ── Section heading ───────────────────────────────────────────────────────────
+\titleformat{\section}{
+  \vspace{1pt}\color{navy}\large\bfseries\sffamily
+}{}{0em}{}[{\color{rulecol}\titlerule[0.6pt]}\vspace{1pt}]
+
+\titlespacing*{\section}{0pt}{2pt}{1pt}
+
+% ── Bullet list ───────────────────────────────────────────────────────────────
+\newlist{rbullet}{itemize}{1}
+\setlist[rbullet]{
+  label=\textbullet,
+  leftmargin=1.4em,
+  itemsep=0pt,
+  parsep=0pt,
+  topsep=0pt,
+  partopsep=0pt,
+  after=\vspace{0pt}
+}
+
+% ── Job header helper ─────────────────────────────────────────────────────────
+% \jobheader{Company}{Title}{Period}{Location}
+\newcommand{\jobheader}[4]{%
+  \vspace{1pt}%
+  {\textbf{#1} \hfill \textit{#3}} \\[-2pt]
+  {\textit{#2} \hfill \textit{#4}} \\[-4pt]
+}
+
+% ── Project header helper ─────────────────────────────────────────────────────
+\newcommand{\projheader}[2]{%
+  \vspace{1pt}%
+  {\textbf{#1} \hfill \textit{#2}} \\[-4pt]
+}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+% ── Name ──────────────────────────────────────────────────────────────────────
+\begin{center}
+  {\fontsize{18}{20}\selectfont\bfseries\sffamily Yuquan Chen}\\[1pt]
+  \small
+  412-475-6091 \;|\;
+  \href{mailto:altheac297@gmail.com}{altheac297@gmail.com} \;|\;
+  \href{https://www.linkedin.com/in/yuquan-althea-chen/}{linkedin.com/in/yuquan-althea-chen}
+\end{center}
+
+% ══ EDUCATION ════════════════════════════════════════════════════════════════
+\section{EDUCATION}
+
+{\textbf{Carnegie Mellon University} \hfill August 2025 -- December 2026}\\[-2pt]
+{\textit{Master of Information Systems Management (MISM)} \hfill Pittsburgh, PA}\\[1pt]
+{\small Relevant Courses: Data-Focused Python (A), Managing Disruptive Technologies (A$-$), NLP (B+), Stats (A$-$)}\par
+
+\vspace{1pt}
+
+{\textbf{Nanjing University} \hfill September 2021 -- June 2025}\\[-2pt]
+{\textit{Bachelor of Information Management \& Information Systems} \hfill Nanjing, China}\\[1pt]
+{\small GPA: 4.32/5.0 \quad|\quad Relevant Courses: Practical ML \& Deep Learning (94), Social Network Analysis (95.2), Text Data Management (93), Big Data Systems (92), Operations Research (89)}\par
+
+% ══ WORK EXPERIENCE ══════════════════════════════════════════════════════════
+\section{WORK EXPERIENCE}
+
+%%WORK_EXPERIENCE%%
+
+% ══ SELECTED PROJECTS \& AWARDS ══════════════════════════════════════════════
+\section{SELECTED PROJECTS \& AWARDS}
+
+%%PROJECTS%%
+
+% ══ LEADERSHIP & ACTIVITIES ══════════════════════════════════════════════════
+\section{LEADERSHIP \& ACTIVITIES}
+
+%%LEADERSHIP%%
+
+% ══ TECHNICAL SKILLS ═════════════════════════════════════════════════════════
+\section{TECHNICAL SKILLS}
+
+{\small\noindent
+\textbf{Analytics \& AI:} LLM Agent Systems (LangGraph, AutoGen), Machine Learning, Uplift Modeling, Causal Inference, NLP, Time Series Forecasting\\[1pt]
+\textbf{Tools \& Visualization:} Python (Pandas, NumPy, Scikit-learn), SQL, Power BI, KNIME, R\\[1pt]
+\textbf{Languages:} English (Professional Working), Mandarin Chinese (Native), Spanish (Elementary)%%COURSEWORK_LINE%%
+}
+
+\end{document}

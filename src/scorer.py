@@ -38,8 +38,19 @@ Scoring guide:
 
 Key factors for THIS candidate:
 - Penalize heavily for: senior/manager/lead roles, roles requiring 3+ years experience
-- Reward heavily for: agentic AI / LLM systems, enterprise software, Solutions Engineer, Forward Deploy
-- Reward moderately for: life sciences domain, bilingual (Chinese/English), data analytics
+- Penalize heavily for: roles requiring US citizenship, active security clearance, or stating
+  "no visa sponsorship" — candidate is on F-1/STEM OPT and will need H-1B sponsorship
+- Reward highest (90+): Forward Deployed Engineer, Agent Engineer, AI Implementation Engineer,
+  Solutions Engineer roles at AI-native companies — building/deploying agentic or LLM systems
+  directly with customers
+- Reward strongly (75-89): AI/tech-forward consulting (e.g. BCG X, Slalom-type technical
+  consulting) and Technical Consultant roles that combine engineering with client-facing work
+- Reward moderately (60-74): Data Scientist/Analyst and general Decision Analytics roles —
+  candidate has the technical background but recent experience is more applied-engineering
+  than research-focused
+- Reward moderately: life sciences domain, bilingual (Chinese/English)
+- Reward lightly, do not over-index: generic Product Manager or Business Analyst roles with
+  no clear technical/AI component — candidate has no traditional PM experience
 - Neutral: general software engineering without AI/ML component
 """
 

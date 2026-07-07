@@ -11,7 +11,7 @@ on:
 jobs:
   screen-jobs:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 90
 
     steps:
       - name: Checkout repo
@@ -31,6 +31,10 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # Needed to compile tailored resume PDFs (src/tailor.py)
+      - name: Install LaTeX (for tailored resume PDFs)
+        run: sudo apt-get update && sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended
+
       # Restore the seen-job-IDs file from previous run (stored as artifact)
       - name: Restore seen job IDs
         uses: actions/cache@v4
@@ -42,10 +46,10 @@ jobs:
 
       - name: Run job screener
         env:
-          ANTHROPIC_API_KEY:       ${{ secrets.ANTHROPIC_API_KEY }}
-          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
-          GOOGLE_SHEET_ID:         ${{ secrets.GOOGLE_SHEET_ID }}
-          ALERT_EMAIL:             ${{ secrets.ALERT_EMAIL }}
+          ANTHROPIC_API_KEY:        ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_CREDENTIALS_JSON:  ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          GOOGLE_SHEET_ID:          ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_DRIVE_FOLDER_ID:   ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
         run: python src/main.py
 
       # Save seen-job-IDs so tomorrow's run skips today's jobs

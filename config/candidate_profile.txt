@@ -1,43 +1,70 @@
-CANDIDATE PROFILE — Yuquan (Althea) Chen
+CANDIDATE PROFILE — Yuquan Chen
 CMU MISM 2026 | Pittsburgh, PA
-Email: chenyuquan297@hotmail.com
+Phone: 412-475-6091 | Email: altheac297@gmail.com | LinkedIn: linkedin.com/in/yuquan-althea-chen
+Work authorization: F-1 (STEM OPT eligible), will require H-1B sponsorship — roles requiring
+US citizenship, active security clearance, or stating no visa sponsorship are not viable.
 
 EDUCATION
-- Carnegie Mellon University — MS Information Systems Management (MISM), 2026
-- Nanjing University — Bachelor's degree
+- Carnegie Mellon University — MS Information Systems Management (MISM), Aug 2025–Dec 2026, Pittsburgh, PA
+  Relevant courses: Data-Focused Python (A), Managing Disruptive Technologies (A-), NLP (B+), Stats (A-)
+- Nanjing University — B.S. Information Management & Information Systems, Sept 2021–June 2025, Nanjing, China
+  GPA: 4.32/5.0. Relevant courses: Practical ML & Deep Learning (94), Social Network Analysis (95.2),
+  Text Data Management (93), Big Data Systems (92), Operations Research (89)
 
-CORE TECHNICAL SKILLS
-- Languages: Python (production-grade), SQL
-- AI/ML: LLM workflows, agentic systems (LangGraph, AutoGen, CrewAI), RAG, LangChain, prompt engineering
-- Data: Power BI, KNIME, pandas, scikit-learn, decision trees, uplift modeling
-- Engineering: API integration (authentication, rate limits, webhooks), GitHub, Django
-- Cloud/Infra: AWS basics, production deployment
+WORK EXPERIENCE
 
-KEY EXPERIENCES
+1. Whelix — AI Robotics Startup, Biotech (AI Engineer Intern, May 2026–present, Pittsburgh, PA)
+   - Architecting and deploying end-to-end AI agentic systems for internal operations, owning full
+     project lifecycle from executive requirements through production
+   - Driving cross-functional adoption by aligning CEO-level product priorities with engineering
+     constraints; making explicit architecture trade-offs (framework selection, cost vs. capability)
+     and communicating decisions to non-technical stakeholders
+   - Integrating enterprise productivity platforms via APIs to automate cross-functional workflows,
+     quantifying impact before building
 
-1. Whelix (AI Engineer Intern, May 2026–present, Boston/Pittsburgh)
-   - Building end-to-end agentic systems for biotech/pharma lab automation
-   - Designing AI agents that integrate with enterprise APIs and robotics systems
-   - Working directly with CTO/CEO on architecture decisions
+2. BASF Polyurethane Specialties (China) Co., Ltd. — Digitalization Intern, Asia-Pacific Monomers
+   (May 2024–Feb 2025, Shanghai, China)
+   - Identified a critical intelligence gap in BASF's MDI/TDI pricing process (manual bilingual
+     news monitoring feeding VP-level pricing decisions in a market where BASF holds significant
+     pricing authority in China)
+   - Designed and deployed an end-to-end LLM-powered (GPT-4o) market intelligence engine automating
+     bilingual news monitoring, extraction, and synthesis; replaced the manual workflow entirely,
+     delivering structured weekly/monthly insight reports consumed directly by pricing decision-makers
+   - Partnered with marketing stakeholders on executive reporting format, driving adoption from day one
+   - Supported 8+ additional digitalization initiatives across supply chain, EHS, and production
+     (Power BI dashboard redesigns, data pipeline automation) as technical translator between
+     business requirements and deployed solutions
 
-2. BASF Digitalization Intern (June 2024–Feb 2025, Shanghai)
-   - Built LLM-based workflow to forecast MDI market demand from bilingual news articles
-   - Delivered automated executive-level weekly/monthly reports
-   - Developed plant equipment inspection system (floor-walk insights, cross-functional)
-   - Automated ICTP data pipelines; built Power BI dashboards for wide audiences
-   - Worked across production, EHS, supply chain, pricing, and business analysis
-
-3. Nanjing University Research Assistant (Sept 2023–June 2025)
-   - Co-authored survey on decision-focused learning (framed 100+ papers)
-   - Implemented novel uplift-modeling algorithm — 3% improvement on Criteo benchmark
-   - Delivered weekly literature briefings to 15-member lab
-
-4. Shanghai Baosight Software (Project Intern, Jan–Feb 2024)
+3. Shanghai Baosight Software (Project Intern, Jan–Feb 2024)
    - Built Python/SQLAlchemy data query system
    - Decision tree and random forest models for classification
 
-PERSONAL PROJECTS
+SELECTED PROJECTS & AWARDS
+
+- Thesis: Decision-Focused Uplift Modeling for AUUC Maximization (Feb–May 2025)
+  Proposed a decision-focused-learning framework optimizing marketing ROI directly via composite
+  loss, formulated as Integer Linear Programming (ILP) — outperformed Causal Forest by 2% AUUC on
+  large-scale datasets, with superior stability in individual treatment effect estimation.
+  (Builds on Nanjing University research assistantship, Sept 2023–June 2025: co-authored survey on
+  decision-focused learning framing 100+ papers, delivered weekly literature briefings to 15-member lab.)
+- CCF Big Data & Computing Intelligence Contest, 1,557 participants (Oct–Dec 2023)
+  Ranked Top 3 (2nd Prize) as team leader; coordinated task allocation and resolved ML vs.
+  Operations Research trade-offs for inventory decision-making.
 - PromptPrompt: CLI tool that reduces LLM token costs by 65%
+
+LEADERSHIP & ACTIVITIES
+- Media Center, Nanjing University Undergraduate Admissions Office (2021–2023)
+  Led end-to-end production of 10+ video campaigns on NJU's official Bilibili account (60,000
+  followers); executive producer for videos totaling 30,000+ views; lead actor in a 4-episode
+  campus life series exceeding 20,000 views — demonstrates comfort with high-visibility,
+  audience-facing communication.
+
+TECHNICAL SKILLS
+- Analytics & AI: LLM agent systems (LangGraph, AutoGen, CrewAI), RAG, LangChain, prompt engineering,
+  machine learning, uplift modeling, causal inference, NLP, time series forecasting
+- Tools & Visualization: Python (pandas, NumPy, scikit-learn), SQL, Power BI, KNIME, R
+- Engineering: API integration (auth, rate limits, webhooks), GitHub, Django, AWS basics
+- Languages: English (professional working), Mandarin Chinese (native), Spanish (elementary)
 
 STRENGTHS FOR MATCHING
 - Rare combination: can BUILD agentic/LLM systems AND communicate to business stakeholders
@@ -46,8 +73,17 @@ STRENGTHS FOR MATCHING
 - Bilingual: English (professional), Chinese (native) — valuable for APAC-facing roles
 - Strong track record of end-to-end ownership and independent delivery
 
-IDEAL ROLE CHARACTERISTICS
-- Bridges technical AI/ML systems with business outcomes
+IDEAL ROLE CHARACTERISTICS (in priority order)
+1. Forward Deployed Engineer, Agent Engineer, AI Implementation Engineer, Solutions Engineer
+   at AI-native companies — building/deploying agentic or LLM systems directly with customers.
+   This is the strongest fit: matches current Whelix work exactly (build + own architecture
+   with leadership) and the rare combo of building agentic systems AND communicating with
+   business stakeholders.
+2. AI/tech-forward consulting and Technical Consultant roles — leverages BASF cross-functional,
+   enterprise (Fortune 500) experience and bilingual APAC-facing value.
+3. Data Scientist / Data Analyst / Decision Analytics roles — solid technical fit (uplift
+   modeling, decision trees, research background) but secondary to the above two.
+4. Generic Product Manager / Business Analyst roles without a clear technical or AI component
+   are a weak fit — no traditional PM experience; avoid over-indexing here.
+- New grad / entry-level / associate level only
 - Enterprise software, AI-native companies, or data-heavy consulting
-- New grad / entry-level / associate level
-- Solutions Engineer, Forward Deployed Engineer, AI Implementation, Technical Consultant, Decision Analytics Associate

@@ -1,0 +1,114 @@
+{
+  "experience": {
+    "whelix": {
+      "company": "Whelix — AI Robotics Startup (Biotech)",
+      "title": "AI Engineer Intern",
+      "dates": "May 2026 -- Present",
+      "location": "Pittsburgh, PA",
+      "bullets": [
+        "Architecting and deploying end-to-end \\textbf{AI agentic systems} for internal operations, owning the full project lifecycle from executive requirements through production — translating ambiguous operational needs into shipped tools used daily across the organization.",
+        "Driving cross-functional adoption by aligning CEO-level product priorities with engineering constraints, making explicit \\textbf{architecture trade-offs} (framework selection, cost vs. capability) and communicating decisions clearly to non-technical stakeholders.",
+        "Integrating enterprise productivity platforms via APIs to \\textbf{automate cross-functional workflows}, identifying process inefficiencies and quantifying impact before building"
+      ]
+    },
+    "basf": {
+      "company": "BASF Polyurethane Specialties (China) Co., Ltd.",
+      "title": "Digitalization Intern, Asia-Pacific Monomers",
+      "dates": "May 2024 -- February 2025",
+      "location": "Shanghai, China",
+      "bullets": [
+        "Identified a critical intelligence gap in BASF's MDI/TDI pricing process: marketing analysts were manually monitoring 3--4 news sources across two languages to track demand signals — an error-prone process feeding VP-level pricing decisions in a market where BASF holds significant pricing authority in China.",
+        "Designed and deployed an \\textbf{end-to-end LLM-powered (GPT-4o) market intelligence engine} that automated bilingual news monitoring, extraction, and synthesis — replacing the manual workflow entirely and delivering structured weekly and monthly insight reports directly consumed by pricing decision-makers.",
+        "Partnered with marketing stakeholders to ensure output format matched executive reporting requirements, driving adoption from day one and eliminating the need for manual news triage across the team.",
+        "Supported \\textbf{8+ additional digitalization initiatives} across supply chain, EHS, and production — including Power BI dashboard redesigns and data pipeline automation — serving as the technical translator between business requirements and deployed solutions."
+      ]
+    }
+  },
+
+  "leadership": {
+    "media_center": {
+      "title": "Media Center, Nanjing University Undergraduate Admissions Office",
+      "dates": "2021 -- 2023",
+      "bullets": [
+        "Led end-to-end production of \\textbf{10+ video campaigns} on NJU's official Bilibili account (60,000 followers), managing cross-functional teams across scripting, directing, and post-production.",
+        "Executive producer for videos accumulating \\textbf{30,000+ views}; served as lead actor in a 4-episode campus life series exceeding \\textbf{20,000 views} — demonstrating comfort with high-visibility, audience-facing communication."
+      ]
+    }
+  },
+
+  "projects": {
+    "thesis_uplift": {
+      "title": "Thesis: Decision-Focused Uplift Modeling for AUUC Maximization",
+      "dates": "February -- May 2025",
+      "tags": ["causal inference", "optimization", "quantitative research", "ILP", "data science"],
+      "bullets": [
+        "Proposed a \\textbf{DFL framework} optimizing marketing ROI directly via composite loss, formulated as Integer Linear Programming (ILP) — \\textbf{outperforming Causal Forest by 2\\% AUUC} on large-scale datasets, demonstrating superior stability in individual treatment effect estimation."
+      ]
+    },
+    "ccf_contest": {
+      "title": "CCF Big Data \\& Computing Intelligence Contest \\textnormal{(1,557 participants)}",
+      "dates": "October -- December 2023",
+      "tags": ["team leadership", "ML + operations research hybrid", "supply chain", "business optimization", "consulting"],
+      "bullets": [
+        "\\textbf{Ranked Top 3 (2nd Prize)} as team leader; coordinated task allocation across team members and resolved technical trade-offs between ML and Operations Research approaches to optimize inventory decision-making."
+      ]
+    },
+    "promptprompt": {
+      "title": "PromptPrompt: AI-Powered Prompt Optimizer",
+      "dates": "November -- December 2025",
+      "tags": ["LLM", "developer tooling", "API integration", "prompt engineering", "AI agent"],
+      "bullets": [
+        "Built a CLI tool that interviews users with clarifying questions to transform vague ideas into engineered prompts for LLMs (Claude, ChatGPT, Gemini), then launches the refined prompt directly in-browser or in local AI tools.",
+        "Cut average LLM token usage by \\textbf{65\\%} in an internal test with teammates across 30 sample questions, by eliminating iterative re-prompting."
+      ]
+    },
+    "social_bot_detection": {
+      "title": "The First Social Group Intelligent Algorithm Competition",
+      "dates": "October -- November 2023",
+      "tags": ["deep learning", "classical ML", "computer vision", "ensemble modeling", "data science"],
+      "bullets": [
+        "Identified fake social media accounts from a 2,500+ entry multilingual dataset with missing values and mixed data types, applying \\textbf{ResNet18} to extract features from profile images.",
+        "Built and tuned an ensemble of GBDT, neural network, and Transformer models, achieving \\textbf{>80\\% prediction accuracy} on held-out data."
+      ]
+    },
+    "weibo_prediction": {
+      "title": "Model Prediction of Weibo Search Popularity",
+      "dates": "July -- August 2023",
+      "tags": ["research", "publication", "web scraping", "R", "neural networks", "data science", "independent research"],
+      "bullets": [
+        "Independently authored and published a peer-reviewed paper predicting Weibo search popularity (\\href{https://doi.org/10.54254/2755-2721/55/20241397}{DOI: 10.54254/2755-2721/55/20241397}), owning the full research pipeline solo.",
+        "Engineered a custom Python web crawler to collect raw social data, then cleaned and modeled it in R with a neural network to predict key engagement features."
+      ]
+    },
+    "prompt_engineering_review": {
+      "title": "Course Paper: The Art of Prompt Engineering in Large Language Models",
+      "dates": "January 2024",
+      "tags": ["LLM", "literature review", "research writing", "coursework"],
+      "note": "This is a course project/paper (Nanjing University), not an independent publication -- described accordingly.",
+      "bullets": [
+        "Authored an independent literature review (course project) on prompt engineering theory and applications across LLM tasks, synthesizing the emerging literature into a structured account of current techniques and open challenges."
+      ]
+    },
+    "baosight": {
+      "title": "Shanghai Baosight Software Co., Ltd. \\textnormal{(Project Intern)}",
+      "dates": "January -- February 2024",
+      "tags": ["data engineering", "SQL", "classical ML", "backend tooling"],
+      "bullets": [
+        "Built a Python/SQLAlchemy tool offering one-click data queries and statistics, directly addressing analyst workflow needs.",
+        "Cleaned and structured historical contract and production data from DB2 databases, building a reliable foundation for analysis.",
+        "Built decision tree and random forest models to extract feature importance and derive classification rules."
+      ]
+    }
+  },
+
+  "coursework_only_skills": {
+    "django": "Django (completed coursework, no production use)",
+    "agile": "Agile Software Development (completed coursework, no production use)",
+    "product_management": "Product Management fundamentals (completed coursework, no production use)"
+  },
+
+  "default_selection": {
+    "selected_projects": ["thesis_uplift", "ccf_contest"],
+    "include_coursework_skills": []
+  }
+}
