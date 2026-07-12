@@ -35,7 +35,7 @@ from discover  import get_companies
 from fetcher   import fetch_all_companies, fetch_workday_descriptions
 from filter    import passes_keyword_filter, deduplicate
 from scorer    import score_jobs_batch
-from tailor    import tailor_resume
+from tailor    import tailor_resumes
 from drive     import upload_resume
 from sheets    import append_jobs
 
@@ -106,8 +106,9 @@ def run():
     logger.info(f"\nJobs scoring {TAILOR_SCORE_THRESHOLD}+ (will get tailored resumes): {len(tailor_candidates)}")
 
     # ── Step 7: Tailor + upload resumes for high-scoring matches ──────────────
-    for j in tailor_candidates:
-        pdf_path = tailor_resume(j)
+    pdf_paths = tailor_resumes(tailor_candidates)
+    for i, j in enumerate(tailor_candidates):
+        pdf_path = pdf_paths.get(i)
         if not pdf_path:
             j["resume_link"] = ""
             continue

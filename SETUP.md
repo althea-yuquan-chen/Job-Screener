@@ -7,7 +7,7 @@ against your profile with Claude AI, generates a tailored resume PDF for
 every strong match, and writes everything to Google Sheets.
 
 **Time to set up: ~30 minutes (one-time)**
-**Ongoing cost: ~$10–50/month in Claude API credits, depending on daily volume**
+**Ongoing cost: $0 in API credits — scoring/tailoring runs through the Claude Code CLI against your existing Claude Pro/Max subscription's included usage, not metered API billing**
 
 ---
 
@@ -15,7 +15,9 @@ every strong match, and writes everything to Google Sheets.
 
 - A GitHub account (free)
 - A Google account (your existing Gmail)
-- An Anthropic account with API access
+- A Claude Pro or Max subscription, and the Claude Code CLI installed locally
+  (`npm install -g @anthropic-ai/claude-code`) — used only once, to generate
+  the token in Step 2
 
 ---
 
@@ -57,13 +59,22 @@ every strong match, and writes everything to Google Sheets.
 
 ---
 
-## Step 2 — Get your Anthropic API Key
+## Step 2 — Get a Claude Code subscription token
 
-1. Go to https://console.anthropic.com
-2. Click **API Keys** in the left sidebar
-3. Click **Create Key** → name it `job-screener`
-4. Copy the key (starts with `sk-ant-...`) — **you only see it once**
-5. Save it somewhere safe temporarily
+The screener scores jobs and tailors resumes by running the Claude Code CLI
+in headless mode (`src/claude_code_client.py`), authenticated against your
+Claude subscription instead of a metered API key — so there's no per-token
+bill.
+
+1. On your own machine, make sure you're logged into Claude Code with your
+   Pro/Max account (`claude` → `/login` if you haven't already)
+2. Run:
+   ```bash
+   claude setup-token
+   ```
+3. This opens a browser to confirm, then prints a long-lived token (valid
+   ~1 year) — copy it. **You only see it once.**
+4. Save it somewhere safe temporarily
 
 ---
 
@@ -159,7 +170,7 @@ You'll need this in Step 4a (for the Sheet only — not the Drive folder).
 
 | Secret Name | Value |
 |---|---|
-| `ANTHROPIC_API_KEY` | Your Anthropic key from Step 2 |
+| `CLAUDE_CODE_OAUTH_TOKEN` | Your token from Step 2 |
 | `GOOGLE_CREDENTIALS_JSON` | The entire contents of the `.json` file from Step 3c |
 | `GOOGLE_SHEET_ID` | The Sheet ID from Step 4a |
 | `GOOGLE_DRIVE_FOLDER_ID` | The Drive folder ID from Step 4b |
@@ -277,6 +288,6 @@ In `.github/workflows/daily_screener.yml`, change `1-5` to `*` in the cron line.
 
 **Very few or zero jobs found** → `src/discover.py` depends on the public SimplifyJobs feed being reachable; check the Actions log for a fetch warning
 
-**Score always 0** → Check `ANTHROPIC_API_KEY` is set correctly in GitHub Secrets
+**Score always 0** → Check `CLAUDE_CODE_OAUTH_TOKEN` is set correctly in GitHub Secrets and hasn't expired (~1 year lifetime — re-run `claude setup-token` and update the secret if it has); also check the Actions log for a `claude CLI not found` error, which means the "Install Claude Code CLI" step failed
 
 **Workflow times out** → With ~350+ companies this run is much bigger than before; the timeout is already raised to 90 minutes, but if you add many more companies to the supplemental list you may need to raise it further

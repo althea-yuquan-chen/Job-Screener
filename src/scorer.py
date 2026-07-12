@@ -1,33 +1,31 @@
 """
-scorer.py — uses Claude API to score each job against Yuquan's profile.
-Returns a match score (0-100) and a brief reasoning string.
+scorer.py — uses Claude (via the local Claude Code CLI, headless mode) to
+score each job against Yuquan's profile. Returns a match score (0-100) and
+a brief reasoning string per job.
+
+Runs through claude_code_client instead of the anthropic API SDK, so scoring
+draws on a Claude subscription's included usage rather than metered API
+billing. Jobs are scored in chunks (not one Claude Code invocation per job)
+because every invocation pays a fixed session-startup overhead -- batching
+amortizes that cost across many jobs instead of paying it per job.
 """
 
-import os
-import json
 import logging
-import time
 from pathlib import Path
-import anthropic
+
+from claude_code_client import run_prompt, ClaudeCodeError
 
 logger = logging.getLogger(__name__)
 
 _profile_path = Path(__file__).parent.parent / "config" / "candidate_profile.txt"
 CANDIDATE_PROFILE = _profile_path.read_text()
 
-client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+CHUNK_SIZE = 40  # jobs per Claude Code call -- keeps prompt/response size manageable
+MAX_DESCRIPTION_CHARS = 3000  # per-job description truncation for the batch prompt only
 
-SYSTEM_PROMPT = """You are a recruiter evaluating job-candidate fit. 
-You will be given a candidate profile and a job posting.
-Respond ONLY with a valid JSON object — no markdown, no explanation outside the JSON.
-
-Return exactly this structure:
-{
-  "score": <integer 0-100>,
-  "match_reasons": ["<reason 1>", "<reason 2>", "<reason 3>"],
-  "concerns": ["<concern 1>"],
-  "summary": "<one sentence why this is or isn't a strong match>"
-}
+SYSTEM_PROMPT = """You are a recruiter evaluating job-candidate fit.
+You will be given a candidate profile and a list of job postings.
+Score every job in the list and return a JSON object matching the given schema.
 
 Scoring guide:
 90-100: Exceptional match — role aligns with candidate's exact skills and experience level
@@ -52,86 +50,87 @@ Key factors for THIS candidate:
 - Reward lightly, do not over-index: generic Product Manager or Business Analyst roles with
   no clear technical/AI component — candidate has no traditional PM experience
 - Neutral: general software engineering without AI/ML component
+
+Every job in the input list must appear exactly once in "results", identified by its "index".
 """
 
-def score_job(job: dict) -> dict:
-    """
-    Score a single job against the candidate profile.
-    Returns the job dict enriched with score, match_reasons, concerns, summary.
-    """
-    user_message = f"""
-CANDIDATE PROFILE:
-{CANDIDATE_PROFILE}
-
----
-
-JOB POSTING:
-Company: {job['company']} (Tier {job['tier']})
-Title: {job['title']}
-Location: {job['location']}
-Posted: {job['posted_at']}
-
-Description:
-{job.get('description', 'No description available.')}
-
----
-
-Score this candidate-job fit. Remember: respond ONLY with the JSON object.
-"""
-
-    for attempt in range(3):
-        try:
-            response = client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=400,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_message}]
-            )
-            raw = response.content[0].text.strip()
-
-            # Strip accidental markdown fences
-            if raw.startswith("```"):
-                raw = raw.split("```")[1]
-                if raw.startswith("json"):
-                    raw = raw[4:]
-            raw = raw.strip()
-
-            result = json.loads(raw)
-            job["score"]         = int(result.get("score", 0))
-            job["match_reasons"] = result.get("match_reasons", [])
-            job["concerns"]      = result.get("concerns", [])
-            job["summary"]       = result.get("summary", "")
-            return job
-
-        except anthropic.AuthenticationError as e:
-            # Not transient -- a bad/revoked key will fail identically on every
-            # retry and every subsequent job. Fail the whole run immediately and
-            # loudly instead of burning through retries for all N jobs and
-            # silently writing score=0 to every row.
-            raise RuntimeError(f"Anthropic API authentication failed (invalid API key?): {e}") from e
-        except json.JSONDecodeError as e:
-            logger.warning(f"JSON parse error on attempt {attempt+1} for {job['title']}: {e}")
-            time.sleep(2)
-        except anthropic.RateLimitError:
-            logger.warning("Rate limited — sleeping 30s")
-            time.sleep(30)
-        except Exception as e:
-            logger.warning(f"Scoring error on attempt {attempt+1} for {job['title']}: {e}")
-            time.sleep(5)
-
-    # Fallback if all attempts fail
-    job["score"]         = 0
-    job["match_reasons"] = []
-    job["concerns"]      = ["Scoring failed — review manually"]
-    job["summary"]       = "Could not score this posting."
-    return job
+RESULT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "results": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "index": {"type": "integer"},
+                    "score": {"type": "integer"},
+                    "match_reasons": {"type": "array", "items": {"type": "string"}},
+                    "concerns": {"type": "array", "items": {"type": "string"}},
+                    "summary": {"type": "string"},
+                },
+                "required": ["index", "score", "match_reasons", "concerns", "summary"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["results"],
+    "additionalProperties": False,
+}
 
 
-def score_jobs_batch(jobs: list[dict], delay: float = 0.5) -> list[dict]:
-    """Score a list of jobs. Adds a small delay between calls."""
-    scored = []
+def _build_prompt(jobs: list[dict]) -> str:
+    postings = []
     for i, job in enumerate(jobs):
-        logger.info(f"Scoring {i+1}/{len(jobs)}: {job['company']} — {job['title']}")
-        scored.append(score_job(job))
-        time.sleep(delay)
-    return scored
+        description = job.get("description", "No description available.")
+        if len(description) > MAX_DESCRIPTION_CHARS:
+            description = description[:MAX_DESCRIPTION_CHARS] + "... [truncated]"
+        postings.append(
+            f"[{i}] Company: {job['company']} (Tier {job['tier']})\n"
+            f"Title: {job['title']}\n"
+            f"Location: {job['location']}\n"
+            f"Posted: {job['posted_at']}\n"
+            f"Description: {description}"
+        )
+    jobs_block = "\n\n---\n\n".join(postings)
+    return (
+        f"CANDIDATE PROFILE:\n{CANDIDATE_PROFILE}\n\n"
+        f"===\n\nJOB POSTINGS ({len(jobs)} total):\n\n{jobs_block}"
+    )
+
+
+def _score_chunk(jobs: list[dict]) -> None:
+    """Scores one chunk of jobs, writing score/match_reasons/concerns/summary
+    onto each job dict in place. Falls back to score=0 for the whole chunk
+    on any failure (missing CLI, timeout, malformed response, etc.)."""
+    try:
+        data = run_prompt(_build_prompt(jobs), SYSTEM_PROMPT, RESULT_SCHEMA)
+        results_by_index = {r["index"]: r for r in data.get("results", [])}
+    except ClaudeCodeError as e:
+        logger.warning(f"Scoring chunk of {len(jobs)} jobs failed: {e}")
+        results_by_index = {}
+
+    for i, job in enumerate(jobs):
+        result = results_by_index.get(i)
+        if result is None:
+            job["score"] = 0
+            job["match_reasons"] = []
+            job["concerns"] = ["Scoring failed — review manually"]
+            job["summary"] = "Could not score this posting."
+        else:
+            job["score"] = int(result.get("score", 0))
+            job["match_reasons"] = result.get("match_reasons", [])
+            job["concerns"] = result.get("concerns", [])
+            job["summary"] = result.get("summary", "")
+
+
+def score_jobs_batch(jobs: list[dict], chunk_size: int = CHUNK_SIZE) -> list[dict]:
+    """Scores a list of jobs against the candidate profile, chunking into
+    groups of `chunk_size` per Claude Code invocation."""
+    for start in range(0, len(jobs), chunk_size):
+        chunk = jobs[start:start + chunk_size]
+        logger.info(
+            f"Scoring jobs {start + 1}-{start + len(chunk)} of {len(jobs)} "
+            f"(chunk of {len(chunk)})..."
+        )
+        _score_chunk(chunk)
+    return jobs

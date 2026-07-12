@@ -1,8 +1,9 @@
 name: Daily Job Screener
 
 on:
-  # Schedule intentionally left disabled until a real ANTHROPIC_API_KEY is in
-  # place and a full end-to-end run has been verified -- re-enable once ready:
+  # Schedule intentionally left disabled until a CLAUDE_CODE_OAUTH_TOKEN secret
+  # (from `claude setup-token`, requires a Claude subscription) is in place and
+  # a full end-to-end run has been verified -- re-enable once ready:
   # schedule:
   #   # 8:00 AM Eastern Time (UTC-4 in summer) = 12:00 UTC
   #   - cron: "0 12 * * 1-5"   # Weekdays only
@@ -33,6 +34,17 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Set up Node.js (for Claude Code CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # Scoring/tailoring runs through the local Claude Code CLI in headless
+      # mode (see src/claude_code_client.py) so it draws on a Claude
+      # subscription's included usage instead of metered API billing.
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
       # Needed to compile tailored resume PDFs (src/tailor.py)
       - name: Install LaTeX (for tailored resume PDFs)
         run: sudo apt-get update && sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended
@@ -48,7 +60,7 @@ jobs:
 
       - name: Run job screener
         env:
-          ANTHROPIC_API_KEY:          ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN:    ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           GOOGLE_CREDENTIALS_JSON:    ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
           GOOGLE_SHEET_ID:            ${{ secrets.GOOGLE_SHEET_ID }}
           GOOGLE_DRIVE_FOLDER_ID:     ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}

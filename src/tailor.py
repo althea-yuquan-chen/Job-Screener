@@ -26,7 +26,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-import anthropic
+from claude_code_client import run_prompt, ClaudeCodeError
 
 logger = logging.getLogger(__name__)
 
@@ -37,37 +37,76 @@ TAILORED_DIR = RESUME_DIR / "tailored"
 DEFAULT_TEX_PATH = RESUME_DIR / "resume.tex"
 
 NUM_PROJECTS_TO_SELECT = 2  # matches the page budget the template was designed for
-
-client = anthropic.Anthropic()
+CHUNK_SIZE = 15  # jobs per Claude Code call -- see claude_code_client.py for why batching matters
 
 SYSTEM_PROMPT = """You tailor a resume's WORDING, EMPHASIS, and CONTENT SELECTION to a job \
 description — while keeping every underlying fact identical.
 
+You will be given one shared CONTENT BANK (fixed work-experience/leadership bullets and a set of
+candidate projects) and a list of JOBS. Produce one tailoring selection per job, identified by
+"index", reusing the same content bank for all of them.
+
 Rules:
-- You MAY reword bullets to match the job's vocabulary/emphasis (e.g. describe the same work as
+- You MAY reword bullets to match each job's vocabulary/emphasis (e.g. describe the same work as
   "AI agent pipeline" vs. "automated workflow" depending on audience).
 - You must NEVER change, generalize, omit, or invent any number, percentage, quantified outcome,
   named tool/technology, company name, or other concrete fact. Every such detail from the original
   bullet must still appear, unchanged, in your reworded version.
 - You must NEVER inflate scope or seniority (e.g. turning "supported" into "led", or "contributed
   to" into "owned") beyond what the original states.
-- For Selected Projects, choose exactly 2 project ids from the ones provided, best-fit first.
-- You may include 0 or more coursework skill ids ONLY if genuinely relevant to this job — never to
-  pad the resume.
+- For each job's Selected Projects, choose exactly 2 project ids from the ones provided, best-fit
+  first.
+- You may include 0 or more coursework skill ids per job ONLY if genuinely relevant to that job —
+  never to pad the resume.
 
-Return ONLY this JSON object:
-{
-  "whelix": [{"index": <original bullet index>, "text": "<original or reworded text>"}, ... one entry per whelix bullet, best-first order ...],
-  "basf": [... same shape, one entry per basf bullet ...],
-  "media_center": [... same shape, one entry per media_center bullet ...],
-  "selected_projects": ["<id>", "<id>"],
-  "project_texts": {
-    "<selected id>": [{"index": <original bullet index>, "text": "..."}, ... one entry per that project's bullets ...],
-    "<other selected id>": [...]
-  },
-  "include_coursework_skills": [<0+ coursework ids>]
-}
+Every job in the input list must appear exactly once in "results", identified by its "index".
 """
+
+_BULLET_ITEM_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "index": {"type": "integer"},
+        "text": {"type": "string"},
+    },
+    "required": ["index", "text"],
+    "additionalProperties": False,
+}
+
+_SELECTION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "index": {"type": "integer"},
+        "whelix": {"type": "array", "items": _BULLET_ITEM_SCHEMA},
+        "basf": {"type": "array", "items": _BULLET_ITEM_SCHEMA},
+        "media_center": {"type": "array", "items": _BULLET_ITEM_SCHEMA},
+        "selected_projects": {"type": "array", "items": {"type": "string"}},
+        "project_texts": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "project_id": {"type": "string"},
+                    "bullets": {"type": "array", "items": _BULLET_ITEM_SCHEMA},
+                },
+                "required": ["project_id", "bullets"],
+                "additionalProperties": False,
+            },
+        },
+        "include_coursework_skills": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": [
+        "index", "whelix", "basf", "media_center",
+        "selected_projects", "project_texts", "include_coursework_skills",
+    ],
+    "additionalProperties": False,
+}
+
+RESULT_SCHEMA = {
+    "type": "object",
+    "properties": {"results": {"type": "array", "items": _SELECTION_SCHEMA}},
+    "required": ["results"],
+    "additionalProperties": False,
+}
 
 _DIGIT_RUN_RE = re.compile(r"\d+")
 _ACRONYM_RE = re.compile(r"\b[A-Z]{2,}\b")
@@ -123,18 +162,11 @@ def _process_bullets(original: list[str], items, label: str) -> list[str]:
     return result
 
 
-def _get_selection(job: dict, bank: dict) -> dict:
+def _build_bank_payload(bank: dict) -> dict:
     exp = bank["experience"]
     projects = bank["projects"]
     leadership = bank["leadership"]["media_center"]
-    coursework = bank["coursework_only_skills"]
-
-    payload = {
-        "job": {
-            "company": job.get("company"),
-            "title": job.get("title"),
-            "description": job.get("description", "No description available."),
-        },
+    return {
         "whelix_bullets": exp["whelix"]["bullets"],
         "basf_bullets": exp["basf"]["bullets"],
         "media_center_bullets": leadership["bullets"],
@@ -142,21 +174,49 @@ def _get_selection(job: dict, bank: dict) -> dict:
             pid: {"title": p["title"], "bullets": p["bullets"], "tags": p.get("tags", [])}
             for pid, p in projects.items()
         },
-        "available_coursework": coursework,
+        "available_coursework": bank["coursework_only_skills"],
     }
 
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=2048,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": json.dumps(payload, indent=2)}],
-    )
-    raw = response.content[0].text.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    return json.loads(raw.strip())
+
+def _get_selections_batch(jobs: list[dict], bank: dict) -> dict[int, dict]:
+    """
+    Gets a tailoring selection for each job in one Claude Code call, reusing
+    the same content-bank payload for all of them (only the job list varies).
+    Returns {index: selection_dict}, with project_texts converted from the
+    schema's array-of-{project_id, bullets} shape back into a dict keyed by
+    project_id, matching what compose_tex() expects. Missing/failed indices
+    are simply absent from the returned dict -- callers fall back per-job.
+    """
+    payload = {
+        "content_bank": _build_bank_payload(bank),
+        "jobs": [
+            {
+                "index": i,
+                "company": job.get("company"),
+                "title": job.get("title"),
+                "description": job.get("description", "No description available."),
+            }
+            for i, job in enumerate(jobs)
+        ],
+    }
+
+    try:
+        data = run_prompt(json.dumps(payload, indent=2), SYSTEM_PROMPT, RESULT_SCHEMA)
+    except ClaudeCodeError as e:
+        logger.warning(f"Batch resume tailoring for {len(jobs)} jobs failed: {e}")
+        return {}
+
+    selections = {}
+    for result in data.get("results", []):
+        idx = result.get("index")
+        if not isinstance(idx, int):
+            continue
+        result = dict(result)
+        result["project_texts"] = {
+            pt["project_id"]: pt["bullets"] for pt in result.get("project_texts", [])
+        }
+        selections[idx] = result
+    return selections
 
 
 def _validate_projects(selected, valid_ids: set) -> list[str]:
@@ -308,21 +368,45 @@ def _safe_stem(job: dict) -> str:
     return re.sub(r"[^A-Za-z0-9_-]+", "_", raw)[:80]
 
 
-def tailor_resume(job: dict) -> Path | None:
+def tailor_resumes(jobs: list[dict], chunk_size: int = CHUNK_SIZE) -> dict[int, Path | None]:
     """
-    Generates a tailored resume PDF for one job. Returns the PDF path, or
-    None if tailoring/compiling failed (caller should treat as "no resume
-    available for this job" rather than fail the whole run).
+    Generates tailored resume PDFs for a list of jobs, batching the Claude
+    Code selection calls in chunks of `chunk_size` (PDF composition/
+    compilation is local and still happens once per job). Returns
+    {index into `jobs`: PDF path or None}; None means tailoring/compiling
+    failed for that job (caller should treat as "no resume available"
+    rather than fail the whole run).
     """
-    try:
-        bank = _load_bank()
-        selection = _get_selection(job, bank)
-        tex = compose_tex(bank, selection)
-        stem = _safe_stem(job)
-        return _compile_pdf(tex, TAILORED_DIR, stem)
-    except Exception as e:
-        logger.warning(f"Resume tailoring failed for {job.get('company')} — {job.get('title')}: {e}")
-        return None
+    bank = _load_bank()
+    results: dict[int, Path | None] = {}
+
+    for start in range(0, len(jobs), chunk_size):
+        chunk = jobs[start:start + chunk_size]
+        logger.info(
+            f"Tailoring resumes {start + 1}-{start + len(chunk)} of {len(jobs)} "
+            f"(chunk of {len(chunk)})..."
+        )
+        selections = _get_selections_batch(chunk, bank)
+        for i, job in enumerate(chunk):
+            global_idx = start + i
+            selection = selections.get(i)
+            if selection is None:
+                logger.warning(
+                    f"No tailoring selection for {job.get('company')} — {job.get('title')}"
+                )
+                results[global_idx] = None
+                continue
+            try:
+                tex = compose_tex(bank, selection)
+                stem = _safe_stem(job)
+                results[global_idx] = _compile_pdf(tex, TAILORED_DIR, stem)
+            except Exception as e:
+                logger.warning(
+                    f"Resume compile failed for {job.get('company')} — {job.get('title')}: {e}"
+                )
+                results[global_idx] = None
+
+    return results
 
 
 def render_default_resume() -> Path:
