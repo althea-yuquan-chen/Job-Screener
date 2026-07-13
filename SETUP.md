@@ -1,6 +1,6 @@
 # Job Screener — Setup Guide
 
-This runs every weekday morning, discovers new-grad job postings across ~350+
+This runs every morning, discovers new-grad job postings across ~350+
 companies (auto-discovered daily from a public new-grad job feed, plus a
 small curated list of AI-native and consulting companies), scores each one
 against your profile with Claude AI, generates a tailored resume PDF for
@@ -195,7 +195,7 @@ select all, copy, paste as the secret value.
 
 ## Step 7 — Activate the daily schedule
 
-The workflow is already configured to run weekdays at 8:00 AM Eastern.
+The workflow is already configured to run every day at 3:00 AM Eastern.
 It activates automatically once you push to the `main` branch.
 
 To confirm it's scheduled: go to **Actions → Daily Job Screener** and you'll see
@@ -265,8 +265,8 @@ Edit `resume/resume.tex` — every tailored resume is generated from this file, 
 **Change the score threshold (tailored resume + sheet inclusion):**
 In `src/main.py`, change `SCORE_THRESHOLD = 75` to any value.
 
-**Run on weekends too:**
-In `.github/workflows/daily_screener.yml`, change `1-5` to `*` in the cron line.
+**Run weekdays only:**
+In `.github/workflows/daily_screener.yml`, change `*` to `1-5` in the cron line.
 
 ---
 

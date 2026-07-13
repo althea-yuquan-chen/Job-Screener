@@ -2,7 +2,7 @@
 
 An automated daily pipeline that finds new-grad job postings, scores each one against my profile with Claude, and generates a tailored resume for every strong match — built for my own US full-time job search.
 
-Runs on a GitHub Actions schedule (weekdays, 8:00 AM ET) with no ongoing API cost: scoring and resume tailoring go through the Claude Code CLI against a Claude Pro/Max subscription's included usage, not metered billing.
+Runs on a GitHub Actions schedule (every day, 3:00 AM ET) with no ongoing API cost: scoring and resume tailoring go through the Claude Code CLI against a Claude Pro/Max subscription's included usage, not metered billing.
 
 ## What it does
 
@@ -46,4 +46,4 @@ See [SETUP.md](SETUP.md) for the full one-time setup walkthrough (GitHub, Google
 
 ## Status
 
-Schedule is currently disabled in the workflow pending a verified `CLAUDE_CODE_OAUTH_TOKEN` and a full end-to-end manual run — see `.github/workflows/daily_screener.yml`.
+Schedule is enabled — runs daily at 3:00 AM ET via `.github/workflows/daily_screener.yml`. Requires a valid `CLAUDE_CODE_OAUTH_TOKEN` and the Google secrets from `SETUP.md` to be set in the repo, or scheduled runs will fail.

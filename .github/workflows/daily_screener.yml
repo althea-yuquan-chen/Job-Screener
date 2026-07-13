@@ -1,12 +1,11 @@
 name: Daily Job Screener
 
 on:
-  # Schedule intentionally left disabled until a CLAUDE_CODE_OAUTH_TOKEN secret
-  # (from `claude setup-token`, requires a Claude subscription) is in place and
-  # a full end-to-end run has been verified -- re-enable once ready:
-  # schedule:
-  #   # 8:00 AM Eastern Time (UTC-4 in summer) = 12:00 UTC
-  #   - cron: "0 12 * * 1-5"   # Weekdays only
+  schedule:
+    # 3:00 AM Eastern Time = 07:00 UTC during EDT (summer). Cron is fixed to
+    # UTC, so this runs at 3:00 AM EDT / 2:00 AM EST -- shift to "0 8 * * *"
+    # if you want it pinned to 3:00 AM during EST (winter) instead.
+    - cron: "0 7 * * *"   # Every day
 
   # Allow manual trigger from GitHub Actions UI
   workflow_dispatch:
