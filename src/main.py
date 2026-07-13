@@ -41,7 +41,7 @@ from sheets    import append_jobs
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 SEEN_IDS_FILE = Path(__file__).parent.parent / ".seen_job_ids.json"
-TAILOR_SCORE_THRESHOLD = 65  # jobs scoring at/above this get a tailored resume + Drive upload
+SCORE_THRESHOLD = 75  # jobs scoring at/above this get a tailored resume + Drive upload, and are written to the sheet
 
 
 def load_seen_ids() -> set:
@@ -102,12 +102,12 @@ def run():
     for j in scored_jobs[:10]:
         logger.info(f"  {j['score']:3d}%  [{j['company']}]  {j['title']}  ({j['location']})")
 
-    tailor_candidates = [j for j in scored_jobs if j.get("score", 0) >= TAILOR_SCORE_THRESHOLD]
-    logger.info(f"\nJobs scoring {TAILOR_SCORE_THRESHOLD}+ (will get tailored resumes): {len(tailor_candidates)}")
+    qualifying_jobs = [j for j in scored_jobs if j.get("score", 0) >= SCORE_THRESHOLD]
+    logger.info(f"\nJobs scoring {SCORE_THRESHOLD}+ (tailored resume + written to sheet): {len(qualifying_jobs)}")
 
     # ── Step 7: Tailor + upload resumes for high-scoring matches ──────────────
-    pdf_paths = tailor_resumes(tailor_candidates)
-    for i, j in enumerate(tailor_candidates):
+    pdf_paths = tailor_resumes(qualifying_jobs)
+    for i, j in enumerate(qualifying_jobs):
         pdf_path = pdf_paths.get(i)
         if not pdf_path:
             j["resume_link"] = ""
@@ -118,7 +118,7 @@ def run():
 
     # ── Step 8: Write to Google Sheet ──────────────────────────────────────────
     logger.info("\nWriting to Google Sheet...")
-    rows_written = append_jobs(scored_jobs)
+    rows_written = append_jobs(qualifying_jobs)
     logger.info(f"Rows written: {rows_written}")
 
     # ── Save seen IDs ─────────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ def run():
 
     logger.info("\n" + "=" * 60)
     logger.info(f"Done. {len(scored_jobs)} jobs scored, {rows_written} written, "
-                f"{len(tailor_candidates)} tailored resumes generated.")
+                f"{len(qualifying_jobs)} tailored resumes generated.")
     logger.info("=" * 60)
 
 

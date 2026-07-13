@@ -4,11 +4,11 @@
       "company": "Whelix — AI Robotics Startup (Biotech)",
       "title": "AI Engineer Intern",
       "dates": "May 2026 -- Present",
-      "location": "Pittsburgh, PA",
+      "location": "Boston, MA",
       "bullets": [
-        "Architecting and deploying end-to-end \\textbf{AI agentic systems} for internal operations, owning the full project lifecycle from executive requirements through production — translating ambiguous operational needs into shipped tools used daily across the organization.",
-        "Driving cross-functional adoption by aligning CEO-level product priorities with engineering constraints, making explicit \\textbf{architecture trade-offs} (framework selection, cost vs. capability) and communicating decisions clearly to non-technical stakeholders.",
-        "Integrating enterprise productivity platforms via APIs to \\textbf{automate cross-functional workflows}, identifying process inefficiencies and quantifying impact before building"
+        "Designed and shipped a production multi-agent AI platform for a robotics startup from the ground up, built directly on the raw \\textbf{Gemini SDK} (no agent framework) to retain full control over the tool-use loop — architecting a single shared runtime powering \\textbf{four} specialized Slack-integrated agents, including two CEO-only specialists entrusted with live sales-pipeline and fundraising data, deployed on \\textbf{Google Cloud Run}.",
+        "Integrated the platform across \\textbf{four} external systems (Slack, Notion, Confluence, Google Workspace) via \\textbf{22 custom tool functions} for structured data read/write, and engineered a two-layer memory architecture — live structured-fact writes plus GCS-backed conversation logging with nightly LLM-driven reconciliation — enabling stateless webhook calls to sustain coherent multi-turn context.",
+        "Automated \\textbf{two} recurring company workflows end-to-end (meeting-notes ingestion and agenda generation) via scheduled Cloud Run triggers, and independently authored an \\textbf{11-database} knowledge-architecture plan to consolidate the company's fragmented internal documentation into a single unified system of record."
       ]
     },
     "basf": {
@@ -42,7 +42,16 @@
       "dates": "February -- May 2025",
       "tags": ["causal inference", "optimization", "quantitative research", "ILP", "data science"],
       "bullets": [
-        "Proposed a \\textbf{DFL framework} optimizing marketing ROI directly via composite loss, formulated as Integer Linear Programming (ILP) — \\textbf{outperforming Causal Forest by 2\\% AUUC} on large-scale datasets, demonstrating superior stability in individual treatment effect estimation."
+        "Proposed a \\textbf{DFL framework} optimizing marketing ROI directly via composite loss, formulated as Integer Linear Programming (ILP) — achieving a \\textbf{3\\%} uplift improvement over baseline methods on the Criteo causal-inference benchmark, demonstrating superior stability in individual treatment effect estimation."
+      ]
+    },
+    "research_assistant": {
+      "title": "Research Assistant, Nanjing University",
+      "dates": "September 2023 -- June 2025",
+      "tags": ["research", "literature review", "causal inference", "academic writing", "collaboration"],
+      "bullets": [
+        "Co-authored a comprehensive survey on \\textbf{decision-focused learning}, single-handedly drafting the introduction and benchmark sections and framing \\textbf{100+ papers} into a unified taxonomy.",
+        "Delivered weekly literature briefings to a \\textbf{15-member} lab group, synthesizing advances in decision-focused learning and modern causal-inference methods for a mixed-background audience."
       ]
     },
     "ccf_contest": {

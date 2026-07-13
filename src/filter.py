@@ -5,6 +5,7 @@ Runs before the Claude API call to eliminate obvious non-matches cheaply.
 
 import json
 import logging
+import re
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -13,9 +14,17 @@ _config_path = Path(__file__).parent.parent / "config" / "filters.json"
 with open(_config_path) as f:
     FILTERS = json.load(f)
 
-INCLUDE_TITLE = [kw.lower() for kw in FILTERS["include_title_keywords"]]
-EXCLUDE_TITLE = [kw.lower() for kw in FILTERS["exclude_title_keywords"]]
+INCLUDE_TITLE = [kw.lower().strip() for kw in FILTERS["include_title_keywords"]]
+EXCLUDE_TITLE = [kw.lower().strip() for kw in FILTERS["exclude_title_keywords"]]
 LOCATIONS     = [loc.lower() for loc in FILTERS["locations"]]
+
+
+def _keyword_match(text: str, keywords: list[str]) -> str | None:
+    """Word-boundary match so e.g. 'intern' doesn't match 'international'."""
+    for kw in keywords:
+        if re.search(rf"\b{re.escape(kw)}\b", text):
+            return kw
+    return None
 
 
 def passes_keyword_filter(job: dict) -> bool:
@@ -26,14 +35,14 @@ def passes_keyword_filter(job: dict) -> bool:
     title = job.get("title", "").lower()
     location = job.get("location", "").lower()
 
-    # Hard exclude: senior/lead/manager roles
-    for kw in EXCLUDE_TITLE:
-        if kw in title:
-            logger.debug(f"EXCLUDED (seniority): {job['company']} — {job['title']}")
-            return False
+    # Hard exclude: senior/lead/manager roles, internships, non-full-time roles
+    hit = _keyword_match(title, EXCLUDE_TITLE)
+    if hit:
+        logger.debug(f"EXCLUDED (keyword '{hit}'): {job['company']} — {job['title']}")
+        return False
 
     # Must match at least one target title keyword
-    title_match = any(kw in title for kw in INCLUDE_TITLE)
+    title_match = _keyword_match(title, INCLUDE_TITLE) is not None
     if not title_match:
         logger.debug(f"EXCLUDED (title mismatch): {job['company']} — {job['title']}")
         return False

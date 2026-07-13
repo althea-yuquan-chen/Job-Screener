@@ -47,15 +47,19 @@ candidate projects) and a list of JOBS. Produce one tailoring selection per job,
 "index", reusing the same content bank for all of them.
 
 Rules:
-- You MAY reword bullets to match each job's vocabulary/emphasis (e.g. describe the same work as
-  "AI agent pipeline" vs. "automated workflow" depending on audience).
+- Reword a work-experience/leadership bullet (whelix, basf, media_center) ONLY when this specific
+  job's description gives you something concrete to mirror (its own vocabulary, tools, or emphasis)
+  that the original bullet doesn't already use. If a bullet already fits the job well as written,
+  leave it unchanged — don't reword for its own sake, and don't feel obligated to make different
+  jobs' resumes look different from each other. Two jobs that are genuinely similar in focus should
+  end up with similar bullets; that's correct, not a bug.
 - You must NEVER change, generalize, omit, or invent any number, percentage, quantified outcome,
   named tool/technology, company name, or other concrete fact. Every such detail from the original
   bullet must still appear, unchanged, in your reworded version.
 - You must NEVER inflate scope or seniority (e.g. turning "supported" into "led", or "contributed
   to" into "owned") beyond what the original states.
 - For each job's Selected Projects, choose exactly 2 project ids from the ones provided, best-fit
-  first.
+  for that specific job's focus.
 - You may include 0 or more coursework skill ids per job ONLY if genuinely relevant to that job —
   never to pad the resume.
 

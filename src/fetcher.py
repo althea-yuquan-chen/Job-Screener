@@ -147,7 +147,14 @@ def fetch_workday(workday_url: str, company_name: str) -> list[dict]:
                     "title": j.get("title", ""),
                     "location": j.get("locationsText", ""),
                     "url": (public_base + ext_url) if ext_url else "",
-                    "job_id": j.get("bulletFields", [""])[0] if j.get("bulletFields") else "",
+                    # externalPath (the job's URL slug) is stable and unique per posting.
+                    # bulletFields is NOT a reliable job ID source: it's a per-tenant-configurable
+                    # list of display facts (e.g. "Full time", "Posted Today", location) and its
+                    # order/content varies by tenant and can change between fetches of the same
+                    # job (e.g. "Posted Today" -> "Posted Yesterday") -- using it as job_id broke
+                    # deduplication, causing the same posting to look "new" on every run and
+                    # generate a fresh tailored resume each time.
+                    "job_id": ext_url,
                     "description": "",
                     "posted_at": j.get("postedOn", "")[:10] if j.get("postedOn") else "",
                     "ats": "workday",
