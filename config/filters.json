@@ -54,5 +54,20 @@
     "university graduate"
   ],
   "high_match_score_threshold": 90,
-  "locations": ["remote", "new york", "san francisco", "pittsburgh", "boston", "chicago", "seattle", "united states", "us"]
+  "locations": ["remote", "new york", "san francisco", "pittsburgh", "boston", "chicago", "seattle", "united states", "usa", "us"],
+  "exclude_locations": [
+    "canada", "ontario", "toronto", "vancouver", "montreal", "quebec", "calgary", "ottawa",
+    "alberta", "british columbia",
+    "united kingdom", "uk", "london", "england", "scotland", "wales", "manchester", "birmingham", "edinburgh",
+    "ireland", "dublin",
+    "europe", "emea", "eu",
+    "germany", "berlin", "munich", "france", "paris", "spain", "madrid", "italy", "milan",
+    "netherlands", "amsterdam", "switzerland", "zurich", "poland", "warsaw", "sweden", "stockholm",
+    "india", "bangalore", "hyderabad", "mumbai", "delhi", "pune",
+    "singapore", "hong kong", "japan", "tokyo", "china", "shanghai", "beijing", "shenzhen",
+    "australia", "sydney", "melbourne",
+    "mexico", "brazil", "sao paulo", "latam",
+    "philippines", "manila", "vietnam", "indonesia", "malaysia", "south africa", "israel", "tel aviv",
+    "uae", "dubai"
+  ]
 }

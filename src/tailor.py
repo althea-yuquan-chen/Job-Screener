@@ -14,9 +14,11 @@ part relies on the prompt rather than a mechanical check, since scope
 inflation isn't reliably detectable by string matching.
 
 Content selection: the two fixed work-experience entries and the one
-leadership entry are always included (bullets reordered/reworded only);
-the "Selected Projects" section is chosen by Claude from the real,
-pre-written project candidates in resume/content_bank.json.
+leadership entry are included by default (bullets reordered/reworded only),
+though the leadership section is dropped entirely if the compiled resume
+overflows to a second page (see _drop_leadership); the "Selected Projects"
+section is chosen by Claude from the real, pre-written project candidates
+in resume/content_bank.json.
 """
 
 import json
@@ -303,15 +305,26 @@ def _resolve_pdflatex() -> str:
 
 
 _PAGE_COUNT_RE = re.compile(r"Output written on \S+\.pdf \((\d+) page")
+_LEADERSHIP_BLOCK_RE = re.compile(
+    r"% ══ LEADERSHIP.*?(?=% ══ TECHNICAL SKILLS)", re.DOTALL
+)
+
+
+def _drop_leadership(tex_content: str) -> str:
+    """
+    Content selection + rewording varies length per job, so unlike the old
+    fixed-content resume, tailored variants can occasionally run long. Rather
+    than shrinking font/margins (which just crams text and reads as
+    unpolished), the fix is to drop the whole LEADERSHIP & ACTIVITIES section
+    -- it's the lowest-priority section for these roles -- when the normal
+    compile overflows to a second page.
+    """
+    return _LEADERSHIP_BLOCK_RE.sub("", tex_content, count=1)
 
 
 def _compact_tex(tex_content: str) -> str:
-    """
-    Content selection + rewording varies length per job, so unlike the old
-    fixed-content resume, tailored variants can occasionally run long. This
-    buys back space: smaller bullet text + tighter margins, applied only as
-    a retry when the normal compile overflows to a second page.
-    """
+    """Smaller bullet text + tighter margins -- last-resort retry if dropping
+    the leadership section alone wasn't enough to fit one page."""
     tex_content = re.sub(
         r"\\usepackage\[left=[^\]]+\]\{geometry\}",
         r"\\usepackage[left=0.5in, right=0.5in, top=0.12in, bottom=0.12in]{geometry}",
@@ -354,13 +367,21 @@ def _compile_pdf(tex_content: str, out_dir: Path, stem: str) -> Path:
     page_match = _PAGE_COUNT_RE.search(stdout)
     pages = int(page_match.group(1)) if page_match else 1
     if pages > 1:
-        logger.info(f"{stem} compiled to {pages} pages — retrying with compacted spacing.")
-        tex_path.write_text(_compact_tex(tex_content), encoding="utf-8")
+        logger.info(f"{stem} compiled to {pages} pages — retrying with leadership section dropped.")
+        tex_content = _drop_leadership(tex_content)
+        tex_path.write_text(tex_content, encoding="utf-8")
         stdout = _run_pdflatex(pdflatex, tex_path, out_dir)
         page_match = _PAGE_COUNT_RE.search(stdout)
         pages = int(page_match.group(1)) if page_match else pages
+
         if pages > 1:
-            logger.warning(f"{stem} still {pages} pages after compacting — using it anyway.")
+            logger.info(f"{stem} still {pages} pages — retrying with compacted spacing too.")
+            tex_path.write_text(_compact_tex(tex_content), encoding="utf-8")
+            stdout = _run_pdflatex(pdflatex, tex_path, out_dir)
+            page_match = _PAGE_COUNT_RE.search(stdout)
+            pages = int(page_match.group(1)) if page_match else pages
+            if pages > 1:
+                logger.warning(f"{stem} still {pages} pages after all retries — using it anyway.")
 
     if not pdf_path.exists():
         raise RuntimeError(f"pdflatex reported success but no PDF was produced for {stem}")

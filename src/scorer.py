@@ -36,8 +36,14 @@ Scoring guide:
 
 Key factors for THIS candidate:
 - Penalize heavily for: senior/manager/lead roles, roles requiring 3+ years experience
-- Penalize heavily for: roles requiring US citizenship, active security clearance, or stating
-  "no visa sponsorship" — candidate is on F-1/STEM OPT and will need H-1B sponsorship
+- Score 0 (hard reject) if the JD requires US citizenship, permanent residency/green card, being a
+  "US person" (ITAR/export-control language), an active security clearance, or states no visa
+  sponsorship is available — candidate is on F-1/STEM OPT and will need H-1B sponsorship. Note the
+  disqualifying requirement in "concerns"; don't let an otherwise strong match offset this.
+- Score 0 (hard reject) if the role is not based in the United States (e.g. Canada, UK, or
+  elsewhere) — including "remote" roles that are only remote-eligible within another country, even
+  if the location field alone doesn't make that clear. Only US-based (including US-remote) roles
+  are viable.
 - Reward highest (90+): Forward Deployed Engineer, Agent Engineer, AI Implementation Engineer,
   Solutions Engineer roles at AI-native companies — building/deploying agentic or LLM systems
   directly with customers

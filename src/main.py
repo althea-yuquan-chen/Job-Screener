@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, str(Path(__file__).parent))
 from discover  import get_companies
 from fetcher   import fetch_all_companies, fetch_workday_descriptions
-from filter    import passes_keyword_filter, deduplicate
+from filter    import passes_keyword_filter, passes_work_auth_filter, deduplicate
 from scorer    import score_jobs_batch
 from tailor    import tailor_resumes
 from drive     import upload_resume
@@ -90,6 +90,19 @@ def run():
     if workday_jobs:
         logger.info(f"Fetching full descriptions for {len(workday_jobs)} Workday postings...")
         fetch_workday_descriptions(workday_jobs)
+
+    # ── Step 5.5: Work-authorization filter ───────────────────────────────────
+    # Now that every job has full JD text, drop postings that require US
+    # citizenship/permanent residency/"US persons"/security clearance/no
+    # sponsorship — hard exclude, not just a scoring penalty (candidate needs
+    # H-1B sponsorship).
+    new_jobs = [j for j in new_jobs if passes_work_auth_filter(j)]
+    logger.info(f"After work-authorization filter: {len(new_jobs)} postings")
+
+    if not new_jobs:
+        logger.info("No jobs left after work-authorization filter. Done.")
+        save_seen_ids(seen_ids)
+        return
 
     # ── Step 6: AI scoring ────────────────────────────────────────────────────
     logger.info(f"\nScoring {len(new_jobs)} jobs with Claude API...")
