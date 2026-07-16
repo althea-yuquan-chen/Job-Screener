@@ -1,0 +1,20 @@
+{
+  "include_career_job_keywords": [
+    "数据",
+    "算法",
+    "人工智能",
+    "AI"
+  ],
+  "exclude_title_keywords": [
+    "高级",
+    "资深",
+    "专家",
+    "总监",
+    "经理",
+    "主管",
+    "负责人",
+    "leader",
+    "社招"
+  ],
+  "note": "recruitType is intentionally NOT used as a hard filter -- live probing showed its query-param semantics are unreliable/inconsistent across companies. Career-track relevance is filtered via career_job_name string match; seniority/social-hire postings are filtered via exclude_title_keywords + left to the LLM scorer's judgment (candidate_profile_cn.txt already says new-grad/entry-level only)."
+}

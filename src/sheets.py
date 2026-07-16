@@ -33,7 +33,7 @@ SHEET_COLUMNS = [
 ]
 
 TIER_LABELS = {1: "P1 — AI/Agent", 2: "P2 — Tech Consulting", 3: "P3 — MBB Stretch"}
-SOURCE_LABELS = {"feed": "New-Grad Feed", "supplemental": "Curated", "unknown": ""}
+SOURCE_LABELS = {"feed": "New-Grad Feed", "supplemental": "Curated", "nowcoder_curated": "Nowcoder (Curated)", "unknown": ""}
 
 
 def _get_service():
@@ -47,12 +47,12 @@ def _get_sheet_id():
     return os.environ["GOOGLE_SHEET_ID"]
 
 
-def get_existing_job_ids(service) -> set:
+def get_existing_job_ids(service, sheet_name: str = "Jobs") -> set:
     """Pull all existing Job IDs from column L (index 11) to avoid duplicates."""
     try:
         result = service.spreadsheets().values().get(
             spreadsheetId=_get_sheet_id(),
-            range="Jobs!L2:L"  # Column L = Job ID, skip header row
+            range=f"{sheet_name}!L2:L"  # Column L = Job ID, skip header row
         ).execute()
         values = result.get("values", [])
         return {row[0] for row in values if row}
@@ -61,17 +61,17 @@ def get_existing_job_ids(service) -> set:
         return set()
 
 
-def ensure_header(service):
+def ensure_header(service, sheet_name: str = "Jobs"):
     """Write the header row if the sheet is empty."""
     try:
         result = service.spreadsheets().values().get(
             spreadsheetId=_get_sheet_id(),
-            range="Jobs!A1:O1"
+            range=f"{sheet_name}!A1:O1"
         ).execute()
         if not result.get("values"):
             service.spreadsheets().values().update(
                 spreadsheetId=_get_sheet_id(),
-                range="Jobs!A1",
+                range=f"{sheet_name}!A1",
                 valueInputOption="RAW",
                 body={"values": [SHEET_COLUMNS]}
             ).execute()
@@ -80,15 +80,18 @@ def ensure_header(service):
         logger.warning(f"Could not ensure header: {e}")
 
 
-def append_jobs(jobs: list[dict]) -> int:
+def append_jobs(jobs: list[dict], sheet_name: str = "Jobs") -> int:
     """
-    Append new scored jobs to the sheet.
+    Append new scored jobs to the sheet (or a different tab within the same
+    spreadsheet, e.g. sheet_name="China Jobs" — the tab must already exist;
+    the Sheets API errors on values().get/append against a non-existent tab
+    rather than silently creating one, so it must be added by hand once).
     Skips any job whose job_id already exists.
     Returns count of rows actually written.
     """
     service = _get_service()
-    ensure_header(service)
-    existing_ids = get_existing_job_ids(service)
+    ensure_header(service, sheet_name)
+    existing_ids = get_existing_job_ids(service, sheet_name)
 
     today = date.today().isoformat()
     rows = []
@@ -133,11 +136,11 @@ def append_jobs(jobs: list[dict]) -> int:
 
     service.spreadsheets().values().append(
         spreadsheetId=_get_sheet_id(),
-        range="Jobs!A1",
+        range=f"{sheet_name}!A1",
         valueInputOption="RAW",
         insertDataOption="INSERT_ROWS",
         body={"values": rows}
     ).execute()
 
-    logger.info(f"Wrote {len(rows)} new jobs to Google Sheet.")
+    logger.info(f"Wrote {len(rows)} new jobs to Google Sheet '{sheet_name}'.")
     return len(rows)

@@ -1,0 +1,74 @@
+name: China Job Screener (Nowcoder)
+
+# Manual-only — no schedule trigger. The curated company list
+# (config/companies_cn.json) is small and hand-maintained, so this is run
+# on demand from the GitHub Actions UI ("Run workflow") rather than daily.
+on:
+  workflow_dispatch:
+
+jobs:
+  screen-china-jobs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Set up Node.js (for Claude Code CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # Scoring runs through the local Claude Code CLI in headless mode (see
+      # src/claude_code_client.py) so it draws on a Claude subscription's
+      # included usage instead of metered API billing.
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      # No LaTeX install needed here — unlike the US pipeline, this one
+      # attaches the existing pre-built resume/resume_zh.pdf as-is rather
+      # than compiling a tailored resume per job.
+
+      # Restore the seen-job-IDs file from previous runs (kept fully
+      # separate from the US pipeline's .seen_job_ids.json cache).
+      - name: Restore seen job IDs
+        uses: actions/cache@v4
+        with:
+          path: .seen_job_ids_cn.json
+          key: seen-job-ids-cn-${{ github.run_id }}
+          restore-keys: |
+            seen-job-ids-cn-
+
+      - name: Run China job screener
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN:    ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          GOOGLE_CREDENTIALS_JSON:    ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          GOOGLE_SHEET_ID:            ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_DRIVE_FOLDER_ID:     ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
+          GOOGLE_OAUTH_CLIENT_ID:     ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
+        run: python src/main_cn.py
+
+      # Save seen-job-IDs so the next manual run skips today's jobs
+      - name: Save seen job IDs
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .seen_job_ids_cn.json
+          key: seen-job-ids-cn-${{ github.run_id }}
