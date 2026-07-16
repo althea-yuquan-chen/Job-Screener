@@ -22,6 +22,7 @@ with open(_config_path, encoding="utf-8") as f:
 
 INCLUDE_CAREER_JOB = [kw.strip() for kw in FILTERS["include_career_job_keywords"]]
 EXCLUDE_TITLE = [kw.strip() for kw in FILTERS["exclude_title_keywords"]]
+TARGET_CITY = FILTERS["target_city"]
 
 
 def _contains_any(text: str, keywords: list[str]) -> str | None:
@@ -32,9 +33,17 @@ def _contains_any(text: str, keywords: list[str]) -> str | None:
 
 
 def passes_category_filter(job: dict) -> bool:
-    """Returns True if the job should be sent to AI scoring."""
+    """Returns True if the job should be sent to AI scoring. Despite the
+    name, this also enforces the location filter — job discovery is no
+    longer company-gated (see discover_cn.py), so job content + location are
+    the only two filter axes left, and they're naturally checked together."""
     title = job.get("title", "")
     career_job_name = job.get("career_job_name", "")
+    location = job.get("location", "")
+
+    if TARGET_CITY not in location:
+        logger.debug(f"EXCLUDED (location '{location}' != {TARGET_CITY}): {job['company']} — {title}")
+        return False
 
     hit = _contains_any(title, EXCLUDE_TITLE)
     if hit:

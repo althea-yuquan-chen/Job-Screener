@@ -1,4 +1,5 @@
 {
+  "target_city": "上海",
   "include_career_job_keywords": [
     "数据",
     "算法",
@@ -16,5 +17,5 @@
     "leader",
     "社招"
   ],
-  "note": "recruitType is intentionally NOT used as a hard filter -- live probing showed its query-param semantics are unreliable/inconsistent across companies. Career-track relevance is filtered via career_job_name string match; seniority/social-hire postings are filtered via exclude_title_keywords + left to the LLM scorer's judgment (candidate_profile_cn.txt already says new-grad/entry-level only)."
+  "note": "recruitType is intentionally NOT used as a hard filter -- live probing showed its query-param semantics are unreliable/inconsistent across companies. Career-track relevance is filtered via career_job_name string match; seniority/social-hire postings are filtered via exclude_title_keywords + left to the LLM scorer's judgment (candidate_profile_cn.txt already says new-grad/entry-level only). target_city is a hard location filter (job['location'] must contain this string) -- there is no company allowlist anymore; discover_cn.py dynamically finds every company on Nowcoder currently recruiting in target_city for include_career_job_keywords, via the school-schedule directory API, rather than relying on a hand-curated company list."
 }

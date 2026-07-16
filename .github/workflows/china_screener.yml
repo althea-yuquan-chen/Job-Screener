@@ -1,15 +1,17 @@
 name: China Job Screener (Nowcoder)
 
-# Manual-only — no schedule trigger. The curated company list
-# (config/companies_cn.json) is small and hand-maintained, so this is run
-# on demand from the GitHub Actions UI ("Run workflow") rather than daily.
+# Manual-only — no schedule trigger, run on demand from the GitHub Actions UI
+# ("Run workflow"). Company discovery is fully dynamic (discover_cn.py hits
+# Nowcoder's own directory, filtered by config/filters_cn.json's target_city
+# + categories), which can surface 50-100+ companies to fetch per run, so
+# this gets a generous timeout.
 on:
   workflow_dispatch:
 
 jobs:
   screen-china-jobs:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - name: Checkout repo

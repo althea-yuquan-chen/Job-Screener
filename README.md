@@ -21,18 +21,30 @@ No email step — I check the Sheet directly and apply continuously, since for a
 ## China pipeline (Nowcoder, manual run)
 
 A second, parallel pipeline for Chinese 校招/实习转正 postings, scoped to **Data and
-AI应用开发 (AI application/agent dev) roles only** — PM is worked by hand since
-Nowcoder's PM coverage is thin/unstructured compared to its technical categories.
+AI应用开发 (AI application/agent dev) roles, in Shanghai only** — PM is worked by
+hand since Nowcoder's PM coverage is thin/unstructured compared to its technical
+categories, and filtering is intentionally job-content + location only, no company
+allowlist (see `config/filters_cn.json`'s `target_city` /
+`include_career_job_keywords`).
 
-Unlike the US pipeline, there's no public feed that auto-discovers which companies to
-target (no open "who uses this ATS" directory in China), so `config/companies_cn.json`
-is a small hand-curated list of Nowcoder company IDs — same spirit as
-`config/companies_supplemental.json`. It's also **not** wired into the daily GitHub
-Actions cron — trigger it manually, either:
+Company selection is fully **dynamic**, not a hand-curated list: `discover_cn.py`
+hits Nowcoder's own 校招日程 directory API
+(`www.nowcoder.com/np-api/u/school-schedule/list-card`, open/unauthenticated,
+~23,700 companies tracked) and keeps whichever ones are *currently* recruiting in
+`target_city` for `include_career_job_keywords`, with a still-open application
+window (`wangshenEndDate`) — of the ~1,150 companies matching Shanghai + Data/AI by
+category tag, only ~60 had a non-expired window at last check, which is what keeps a
+per-run full crawl practical. That discovered set (Alibaba/Tencent/Baidu/PDD/
+Bilibili plus a long tail of quant funds, robotics, and chip companies, last checked)
+then each gets a full job-list fetch via the same open per-company API the earlier
+prototype used (`nowpick.nowcoder.com/u/company/job/list/v2`).
+
+Not wired into the daily GitHub Actions cron — trigger it manually, either:
 
 - from GitHub: Actions tab → "China Job Screener (Nowcoder)" → "Run workflow"
   (`.github/workflows/china_screener.yml`, `workflow_dispatch`-only, no schedule —
-  uses the same repo Secrets as the US pipeline), or
+  uses the same repo Secrets as the US pipeline; a 60-minute timeout since the
+  discovered company set can run into the tens/hundreds), or
 - locally: `python src/main_cn.py` (only useful for testing the discover/filter/score
   logic — Sheets/Drive writes will no-op locally since GitHub Secrets are only ever
   injected as env vars inside an actual Actions run, never retrievable elsewhere).
@@ -41,21 +53,18 @@ One-time prerequisite: add a **"China Jobs"** tab to the same Google Sheet the U
 pipeline already writes to (`sheets.py`'s tab name is parameterized, but it errors on
 a non-existent tab rather than creating one).
 
-Flow (`src/main_cn.py`): `discover_cn.py` calls Nowcoder's open, unauthenticated
-per-company job API (`nowpick.nowcoder.com/u/company/job/list/v2` — confirmed live to
-require no login, unlike Nowcoder's general search page or BOSS直聘/Moka/北森, which
-are all effectively unscrapable) → `filter_cn.py` keeps only Data/AI-flavored postings
-(by `career_job_name`, via plain substring match — `\b` word-boundary regex like
-`filter.py` uses doesn't work on Chinese text) and dedupes against
-`.seen_job_ids_cn.json` → `scorer_cn.py` scores survivors against
-`config/candidate_profile_cn.txt` (China-market version — no visa/citizenship logic,
-re-ranked toward Data/AI应用开发) via the same Claude Code CLI mechanism as the US
-scorer → jobs scoring 75+ get the existing static `resume/resume_zh.pdf` attached (no
-per-job Chinese tailoring yet) and are written to the **"China Jobs"** tab of the same
-Google Sheet (`sheets.py`'s tab name is parameterized; the tab must already exist).
-
-To add more companies: visit `https://www.nowcoder.com/enterprise/{id}` for a company
-and copy the numeric id into `config/companies_cn.json`.
+Flow (`src/main_cn.py`): `discover_cn.py` discovers matching companies then fetches
+every posting for each (both steps hit open, unauthenticated Nowcoder endpoints —
+confirmed live to require no login, unlike Nowcoder's general search page or
+BOSS直聘/Moka/北森, which are all effectively unscrapable) → `filter_cn.py` keeps
+only Data/AI-flavored, Shanghai-located postings (by `career_job_name` and
+`location`, via plain substring match — `\b` word-boundary regex like `filter.py`
+uses doesn't work on Chinese text) and dedupes against `.seen_job_ids_cn.json` →
+`scorer_cn.py` scores survivors against `config/candidate_profile_cn.txt`
+(China-market version — no visa/citizenship logic, re-ranked toward Data/AI应用开发)
+via the same Claude Code CLI mechanism as the US scorer → jobs scoring 75+ get the
+existing static `resume/resume_zh.pdf` attached (no per-job Chinese tailoring yet)
+and are written to the **"China Jobs"** tab of the same Google Sheet.
 
 ## Project layout
 
@@ -70,16 +79,15 @@ src/
   drive.py / sheets.py      Google Drive/Sheets delivery
   claude_code_client.py     wraps the Claude Code CLI in headless mode
   main_cn.py                China pipeline orchestrator (manual run, see below)
-  discover_cn.py             Nowcoder per-company job fetching
-  filter_cn.py                category filter + dedup (Chinese-text-safe matching)
+  discover_cn.py             dynamic Nowcoder company discovery + per-company job fetching
+  filter_cn.py                category + location filter + dedup (Chinese-text-safe matching)
   scorer_cn.py                Claude-based scoring against the China-market profile
 config/
   candidate_profile.txt        my background, used as the scoring rubric
   filters.json                  keyword/location pre-filter rules
   companies_supplemental.json   hand-picked companies outside the feed
   candidate_profile_cn.txt      China-market version of the scoring rubric
-  filters_cn.json                Data/AI应用开发 category filter rules
-  companies_cn.json              curated Nowcoder company-id list
+  filters_cn.json                target_city + Data/AI应用开发 category filter rules
 resume/
   content_bank.json         all real experience/project entries (source of truth)
   resume_template.tex       LaTeX template with placeholder markers

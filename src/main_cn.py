@@ -2,16 +2,21 @@
 main_cn.py — China (Nowcoder) job screener, run manually: `python src/main_cn.py`
 
 Parallel to main.py (the US pipeline) but deliberately NOT wired into the
-same daily GitHub Actions cron — the company list here is a small, hand-
-curated set (config/companies_cn.json), so there's no need for full
-automation yet, and Althea asked for a manually-run script for v1.
+same daily GitHub Actions cron — triggered manually from the Actions UI
+(see .github/workflows/china_screener.yml).
+
+Company selection is NOT a hand-curated list — Althea asked for job content
+and location to be the only filters, so discover_cn.py dynamically finds
+every company on Nowcoder currently recruiting in config/filters_cn.json's
+target_city for its include_career_job_keywords categories, via Nowcoder's
+open school-schedule directory API (see discover_cn.py's docstring).
 
 Flow:
-  1. Discover: fetch every posting for the curated company list from
-     Nowcoder's open per-company job API (discover_cn.py)
-  2. Filter: category keyword pre-filter (Data / AI应用开发 only — PM is
-     out of scope for this automated pipeline; she works PM by hand) +
-     dedupe against .seen_job_ids_cn.json (filter_cn.py)
+  1. Discover + fetch: find every matching company, then pull every posting
+     from each, from Nowcoder's open per-company job API (discover_cn.py)
+  2. Filter: category + location filter (Data / AI应用开发 in target_city
+     only — PM is out of scope for this automated pipeline; she works PM by
+     hand) + dedupe against .seen_job_ids_cn.json (filter_cn.py)
   3. Score: Claude Code CLI against a China-market candidate profile
      (scorer_cn.py)
   4. For jobs scoring high enough: attach the existing static
@@ -69,7 +74,7 @@ def run():
 
     # ── Step 2: Category filter ───────────────────────────────────────────────
     category_passed = [j for j in all_jobs if passes_category_filter(j)]
-    logger.info(f"After category filter (Data / AI应用开发): {len(category_passed)} postings")
+    logger.info(f"After category + location filter (Data / AI应用开发, 上海 only): {len(category_passed)} postings")
 
     # ── Step 3: Deduplicate ───────────────────────────────────────────────────
     new_jobs, seen_ids = deduplicate(category_passed, seen_ids)
