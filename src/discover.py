@@ -34,15 +34,21 @@ DISQUALIFYING_SPONSORSHIP = {"Does Not Offer Sponsorship", "U.S. Citizenship is 
 
 _SUPPLEMENTAL_PATH = Path(__file__).parent.parent / "config" / "companies_supplemental.json"
 
-_GREENHOUSE_RE = re.compile(r"(?:job-boards|boards)\.greenhouse\.io/([^/]+)/")
+# job-boards.greenhouse.io / boards.greenhouse.io / job-boards.eu.greenhouse.io
+# (the .eu. subdomain is a separate region Greenhouse serves EU-based orgs from —
+# same API shape, just a different host)
+_GREENHOUSE_RE = re.compile(r"(?:job-boards|boards)\.(?:eu\.)?greenhouse\.io/([^/]+)/")
 _LEVER_RE = re.compile(r"jobs\.lever\.co/([^/]+)/")
 _WORKDAY_RE = re.compile(
     r"https?://([a-z0-9\-]+)\.(wd\d+)\.myworkdayjobs\.com/(?:[a-z]{2}-[A-Z]{2}/)?([^/]+)/job/"
 )
+_ASHBY_RE = re.compile(r"jobs\.ashbyhq\.com/([^/]+)/")
+_SMARTRECRUITERS_RE = re.compile(r"jobs\.smartrecruiters\.com/([^/]+)/")
+_WORKABLE_RE = re.compile(r"apply\.workable\.com/([^/]+)/")
 
 
 def _classify(entry: dict) -> dict | None:
-    """Try to resolve a feed entry's URL to a Greenhouse/Lever/Workday company."""
+    """Try to resolve a feed entry's URL to a company on a supported ATS."""
     for url in (entry.get("url", ""), entry.get("company_url", "")):
         if not url:
             continue
@@ -52,6 +58,15 @@ def _classify(entry: dict) -> dict | None:
         m = _LEVER_RE.search(url)
         if m:
             return {"ats": "lever", "id": m.group(1)}
+        m = _ASHBY_RE.search(url)
+        if m:
+            return {"ats": "ashby", "id": m.group(1)}
+        m = _WORKABLE_RE.search(url)
+        if m:
+            return {"ats": "workable", "id": m.group(1)}
+        m = _SMARTRECRUITERS_RE.search(url)
+        if m:
+            return {"ats": "smartrecruiters", "id": m.group(1)}
         m = _WORKDAY_RE.search(url)
         if m:
             subdomain, wd_n, tenant = m.groups()

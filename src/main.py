@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 # ── Local imports ─────────────────────────────────────────────────────────────
 sys.path.insert(0, str(Path(__file__).parent))
 from discover  import get_companies
-from fetcher   import fetch_all_companies, fetch_workday_descriptions
+from fetcher   import fetch_all_companies, fetch_workday_descriptions, fetch_smartrecruiters_descriptions
 from filter    import passes_keyword_filter, passes_work_auth_filter, deduplicate
 from scorer    import score_jobs_batch
 from tailor    import tailor_resumes
@@ -82,14 +82,20 @@ def run():
         save_seen_ids(seen_ids)
         return
 
-    # ── Step 5: Enrich Workday survivors with full JD text ────────────────────
-    # Workday's list endpoint doesn't include description text (unlike
-    # Greenhouse/Lever) — fetching it is one extra request per job, so this
-    # only runs on jobs that already survived the keyword filter + dedupe.
+    # ── Step 5: Enrich Workday/SmartRecruiters survivors with full JD text ────
+    # Workday and SmartRecruiters list endpoints don't include description
+    # text (unlike Greenhouse/Lever/Ashby) — fetching it is one extra request
+    # per job, so this only runs on jobs that already survived the keyword
+    # filter + dedupe.
     workday_jobs = [j for j in new_jobs if j.get("ats") == "workday"]
     if workday_jobs:
         logger.info(f"Fetching full descriptions for {len(workday_jobs)} Workday postings...")
         fetch_workday_descriptions(workday_jobs)
+
+    smartrecruiters_jobs = [j for j in new_jobs if j.get("ats") == "smartrecruiters"]
+    if smartrecruiters_jobs:
+        logger.info(f"Fetching full descriptions for {len(smartrecruiters_jobs)} SmartRecruiters postings...")
+        fetch_smartrecruiters_descriptions(smartrecruiters_jobs)
 
     # ── Step 5.5: Work-authorization filter ───────────────────────────────────
     # Now that every job has full JD text, drop postings that require US

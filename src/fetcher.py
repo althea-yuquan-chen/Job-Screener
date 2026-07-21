@@ -81,6 +81,151 @@ def fetch_lever(company_id: str, company_name: str) -> list[dict]:
         return []
 
 
+# ── Ashby ─────────────────────────────────────────────────────────────────────
+
+def fetch_ashby(company_id: str, company_name: str) -> list[dict]:
+    """Ashby has a public job-board API — no auth needed. Unlike Workday, the
+    list endpoint already includes full description HTML, so no separate
+    per-job enrichment step is needed."""
+    url = f"https://api.ashbyhq.com/posting-api/job-board/{company_id}"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=15)
+        r.raise_for_status()
+        data = r.json()
+        jobs = []
+        for j in data.get("jobs", []):
+            jobs.append({
+                "company": company_name,
+                "title": j.get("title", ""),
+                "location": j.get("location", ""),
+                "url": j.get("jobUrl", ""),
+                "job_id": j.get("id", ""),
+                "description": _clean_html(j.get("descriptionHtml", "")),
+                "posted_at": (j.get("publishedAt") or "")[:10],
+                "ats": "ashby",
+            })
+        return jobs
+    except Exception as e:
+        logger.warning(f"Ashby fetch failed for {company_name}: {e}")
+        return []
+
+
+# ── Workable ──────────────────────────────────────────────────────────────────
+
+def fetch_workable(company_id: str, company_name: str) -> list[dict]:
+    """Workable has a public widget API — no auth needed."""
+    url = f"https://apply.workable.com/api/v1/widget/accounts/{company_id}"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=15)
+        r.raise_for_status()
+        data = r.json()
+        jobs = []
+        for j in data.get("jobs", []):
+            location_parts = [p for p in (
+                j.get("city"), j.get("state"), j.get("country")
+            ) if p]
+            jobs.append({
+                "company": company_name,
+                "title": j.get("title", ""),
+                "location": ", ".join(location_parts),
+                "url": j.get("url", ""),
+                "job_id": j.get("shortcode", ""),
+                "description": _clean_html(j.get("description", "")),
+                "posted_at": (j.get("published_on") or "")[:10],
+                "ats": "workable",
+            })
+        return jobs
+    except Exception as e:
+        logger.warning(f"Workable fetch failed for {company_name}: {e}")
+        return []
+
+
+# ── SmartRecruiters ───────────────────────────────────────────────────────────
+
+def fetch_smartrecruiters(company_id: str, company_name: str) -> list[dict]:
+    """
+    SmartRecruiters has a public postings API — no auth needed.
+
+    Like Workday, the list endpoint does NOT include full description text
+    (only title/location/id) — full descriptions require a separate per-job
+    detail request; see fetch_smartrecruiters_description, which main.py
+    calls only for jobs that survive the keyword filter.
+    """
+    jobs = []
+    offset = 0
+    PAGE_SIZE = 100
+    try:
+        while True:
+            url = f"https://api.smartrecruiters.com/v1/companies/{company_id}/postings"
+            r = requests.get(url, headers=HEADERS, params={"limit": PAGE_SIZE, "offset": offset}, timeout=15)
+            r.raise_for_status()
+            data = r.json()
+            content = data.get("content", [])
+            if not content:
+                break
+            for j in content:
+                jobs.append({
+                    "company": company_name,
+                    "title": j.get("name", ""),
+                    "location": _format_smartrecruiters_location(j.get("location", {})),
+                    "url": j.get("applyUrl", "") or j.get("ref", ""),
+                    "job_id": j.get("id", ""),
+                    "description": "",
+                    "posted_at": (j.get("releasedDate") or "")[:10],
+                    "ats": "smartrecruiters",
+                    "_smartrecruiters_company_id": company_id,
+                })
+            offset += PAGE_SIZE
+            if offset >= data.get("totalFound", 0):
+                break
+        return jobs
+    except Exception as e:
+        logger.warning(f"SmartRecruiters fetch failed for {company_name} (got {len(jobs)} before failure): {e}")
+        return jobs
+
+
+def _format_smartrecruiters_location(loc: dict) -> str:
+    parts = [loc.get(k) for k in ("city", "region", "country") if loc.get(k)]
+    return ", ".join(parts)
+
+
+def fetch_smartrecruiters_description(job: dict) -> str:
+    """Fetches full JD text for a single SmartRecruiters job (see note on
+    fetch_smartrecruiters). Call this only for jobs that already survived
+    the keyword filter, since it's one HTTP request per job."""
+    company_id = job.get("_smartrecruiters_company_id", "")
+    job_id = job.get("job_id", "")
+    if not company_id or not job_id:
+        return ""
+    url = f"https://api.smartrecruiters.com/v1/companies/{company_id}/postings/{job_id}"
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=15)
+        r.raise_for_status()
+        data = r.json()
+        sections = data.get("jobAd", {}).get("sections", {})
+        text = " ".join(
+            _clean_html(s.get("text", "")) for s in sections.values() if isinstance(s, dict)
+        )
+        return text[:3000]
+    except Exception as e:
+        logger.warning(f"SmartRecruiters detail fetch failed for {job.get('company')} — {job.get('title')}: {e}")
+        return ""
+
+
+def fetch_smartrecruiters_descriptions(jobs: list[dict], max_workers: int = 10) -> None:
+    """Enriches SmartRecruiters jobs in-place with full JD text, concurrently
+    (same pattern as fetch_workday_descriptions)."""
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(fetch_smartrecruiters_description, j): j for j in jobs}
+        for future in as_completed(futures):
+            job = futures[future]
+            try:
+                job["description"] = future.result()
+            except Exception as e:
+                logger.warning(f"SmartRecruiters description enrichment failed for {job.get('company')} — {job.get('title')}: {e}")
+                job["description"] = ""
+
+
 # ── Workday ───────────────────────────────────────────────────────────────────
 
 def _workday_headers(workday_url: str) -> dict:
@@ -220,6 +365,12 @@ def fetch_jobs_for_company(company: dict) -> list[dict]:
         jobs = fetch_greenhouse(cid, name)
     elif ats == "lever":
         jobs = fetch_lever(cid, name)
+    elif ats == "ashby":
+        jobs = fetch_ashby(cid, name)
+    elif ats == "workable":
+        jobs = fetch_workable(cid, name)
+    elif ats == "smartrecruiters":
+        jobs = fetch_smartrecruiters(cid, name)
     elif ats == "workday":
         jobs = fetch_workday(company.get("workday_url", ""), name)
     else:
