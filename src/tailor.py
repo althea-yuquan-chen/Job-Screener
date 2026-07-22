@@ -207,7 +207,7 @@ def _get_selections_batch(jobs: list[dict], bank: dict) -> dict[int, dict]:
     }
 
     try:
-        data = run_prompt(json.dumps(payload, indent=2), SYSTEM_PROMPT, RESULT_SCHEMA)
+        data = run_prompt(json.dumps(payload, indent=2), SYSTEM_PROMPT, RESULT_SCHEMA, model="fable")
     except ClaudeCodeError as e:
         logger.warning(f"Batch resume tailoring for {len(jobs)} jobs failed: {e}")
         return {}
@@ -308,6 +308,10 @@ _PAGE_COUNT_RE = re.compile(r"Output written on \S+\.pdf \((\d+) page")
 _LEADERSHIP_BLOCK_RE = re.compile(
     r"% ══ LEADERSHIP.*?(?=% ══ TECHNICAL SKILLS)", re.DOTALL
 )
+_RBULLET_BLOCK_RE = re.compile(r"\\begin\{rbullet\}(.*?)\\end\{rbullet\}", re.DOTALL)
+_ITEM_RE = re.compile(r"  \\item\b.*?(?=  \\item\b|\Z)", re.DOTALL)
+
+MAX_TRIM_ATTEMPTS = 15  # one page is a hard rule -- see _trim_one_bullet
 
 
 def _drop_leadership(tex_content: str) -> str:
@@ -339,6 +343,27 @@ def _compact_tex(tex_content: str) -> str:
     return tex_content
 
 
+def _trim_one_bullet(tex_content: str) -> str | None:
+    """
+    Removes the last bullet from whichever rbullet block currently has the
+    most items (a section must keep at least 1). Last-resort fallback for
+    the one-page hard rule when dropping leadership + compacting spacing
+    still isn't enough -- trims real (truthful) content rather than
+    reducing font/margins further, since that has diminishing returns past
+    a point. Returns None once every block is down to a single bullet.
+    """
+    best = None  # (item_count, match)
+    for m in _RBULLET_BLOCK_RE.finditer(tex_content):
+        items = _ITEM_RE.findall(m.group(1))
+        if len(items) > 1 and (best is None or len(items) > best[0]):
+            best = (len(items), m, items)
+    if best is None:
+        return None
+    _, m, items = best
+    new_block = "\\begin{rbullet}\n" + "".join(items[:-1]) + "\\end{rbullet}\n"
+    return tex_content[:m.start()] + new_block + tex_content[m.end():]
+
+
 def _run_pdflatex(pdflatex: str, tex_path: Path, out_dir: Path) -> str:
     stdout = ""
     for _ in range(2):  # 2 passes — hyperref/rerunfilecheck wants it for stable output
@@ -356,32 +381,55 @@ def _run_pdflatex(pdflatex: str, tex_path: Path, out_dir: Path) -> str:
 
 
 def _compile_pdf(tex_content: str, out_dir: Path, stem: str) -> Path:
+    """
+    Compiles to PDF, enforcing one page as a hard rule: never returns (or
+    silently accepts) a 2+ page resume. Escalates from cheapest to most
+    invasive: drop leadership -> compact spacing -> trim real content one
+    bullet at a time (from whichever section has the most) until it fits.
+    Raises if even trimming every section down to one bullet isn't enough,
+    since at that point something is wrong with the template/content, not
+    just this job's selection.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
     tex_path = out_dir / f"{stem}.tex"
     pdf_path = out_dir / f"{stem}.pdf"
     pdflatex = _resolve_pdflatex()
 
-    tex_path.write_text(tex_content, encoding="utf-8")
-    stdout = _run_pdflatex(pdflatex, tex_path, out_dir)
+    def render(tex: str) -> int:
+        tex_path.write_text(tex, encoding="utf-8")
+        stdout = _run_pdflatex(pdflatex, tex_path, out_dir)
+        page_match = _PAGE_COUNT_RE.search(stdout)
+        return int(page_match.group(1)) if page_match else 1
 
-    page_match = _PAGE_COUNT_RE.search(stdout)
-    pages = int(page_match.group(1)) if page_match else 1
+    pages = render(tex_content)
+
     if pages > 1:
         logger.info(f"{stem} compiled to {pages} pages — retrying with leadership section dropped.")
         tex_content = _drop_leadership(tex_content)
-        tex_path.write_text(tex_content, encoding="utf-8")
-        stdout = _run_pdflatex(pdflatex, tex_path, out_dir)
-        page_match = _PAGE_COUNT_RE.search(stdout)
-        pages = int(page_match.group(1)) if page_match else pages
+        pages = render(tex_content)
 
-        if pages > 1:
-            logger.info(f"{stem} still {pages} pages — retrying with compacted spacing too.")
-            tex_path.write_text(_compact_tex(tex_content), encoding="utf-8")
-            stdout = _run_pdflatex(pdflatex, tex_path, out_dir)
-            page_match = _PAGE_COUNT_RE.search(stdout)
-            pages = int(page_match.group(1)) if page_match else pages
-            if pages > 1:
-                logger.warning(f"{stem} still {pages} pages after all retries — using it anyway.")
+    if pages > 1:
+        logger.info(f"{stem} still {pages} pages — retrying with compacted spacing too.")
+        tex_content = _compact_tex(tex_content)
+        pages = render(tex_content)
+
+    trims = 0
+    while pages > 1 and trims < MAX_TRIM_ATTEMPTS:
+        trimmed = _trim_one_bullet(tex_content)
+        if trimmed is None:
+            break
+        tex_content = trimmed
+        pages = render(tex_content)
+        trims += 1
+
+    if trims:
+        logger.info(f"{stem}: trimmed {trims} bullet(s) to fit one page.")
+
+    if pages > 1:
+        raise RuntimeError(
+            f"{stem}: still {pages} pages after dropping leadership, compacting, and "
+            f"trimming {trims} bullets — one page is a hard rule, refusing to produce this resume."
+        )
 
     if not pdf_path.exists():
         raise RuntimeError(f"pdflatex reported success but no PDF was produced for {stem}")

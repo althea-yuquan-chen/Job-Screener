@@ -77,9 +77,14 @@ def run():
     new_jobs, seen_ids = deduplicate(keyword_passed, seen_ids)
     logger.info(f"New (not previously seen): {len(new_jobs)} postings")
 
+    # Persist immediately: scoring/tailoring can run long enough to hit the
+    # workflow timeout, and if that kills the process mid-run, today's dedup
+    # progress must not be lost -- otherwise tomorrow's run sees the same
+    # backlog as "new" again and can time out on repeat.
+    save_seen_ids(seen_ids)
+
     if not new_jobs:
         logger.info("No new jobs to score today. Done.")
-        save_seen_ids(seen_ids)
         return
 
     # ── Step 5: Enrich Workday/SmartRecruiters survivors with full JD text ────
