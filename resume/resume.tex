@@ -91,8 +91,8 @@
 
 \jobheader{Whelix — AI Robotics Startup (Biotech)}{AI Engineer Intern}{May 2026 -- Present}{Boston, MA}
 \begin{rbullet}
-  \item Designed and shipped a production multi-agent AI platform for a robotics startup from the ground up, built directly on the raw \textbf{Gemini SDK} (no agent framework) to retain full control over the tool-use loop — architecting a single shared runtime powering \textbf{four} specialized Slack-integrated agents, including two CEO-only specialists entrusted with live sales-pipeline and fundraising data, deployed on \textbf{Google Cloud Run}.
-  \item Integrated the platform across \textbf{four} external systems (Slack, Notion, Confluence, Google Workspace) via \textbf{22 custom tool functions} for structured data read/write, engineering a shared tool-routing layer — used by every agent, top-level and specialist alike — that narrows each request to its most relevant tool subset before execution to improve tool-call accuracy, plus a two-layer memory architecture — live structured-fact writes plus GCS-backed conversation logging with nightly LLM-driven reconciliation — enabling stateless webhook calls to sustain coherent multi-turn context.
+  \item Designed and shipped a production multi-agent AI platform for a robotics startup from the ground up, built directly on the raw \textbf{Gemini SDK} (no agent framework) to retain full control over the tool-use loop — architecting a single orchestrator agent that dynamically delegates to \textbf{three} specialized sub-agents at runtime via a dedicated routing tool, re-verifying authorization on every delegation to gate two CEO-only specialists entrusted with live sales-pipeline and fundraising data, deployed on \textbf{Google Cloud Run}.
+  \item Integrated the platform across \textbf{three} external systems (Notion, Confluence, and Google Workspace — Gmail, Calendar, and Chat) via \textbf{26 custom tool functions} for structured data read/write, and engineered a two-layer memory architecture — live structured-fact writes plus GCS-backed conversation logging with nightly LLM-driven reconciliation — enabling stateless webhook calls to sustain coherent multi-turn context.
   \item Automated \textbf{two} recurring company workflows end-to-end (meeting-notes ingestion and agenda generation) via scheduled Cloud Run triggers, and independently authored an \textbf{11-database} knowledge-architecture plan to consolidate the company's fragmented internal documentation into a single unified system of record.
 \end{rbullet}
 
@@ -101,7 +101,7 @@
   \item Identified a critical intelligence gap in BASF's MDI/TDI pricing process: marketing analysts were manually monitoring 3--4 news sources across two languages to track demand signals — an error-prone process feeding VP-level pricing decisions in a market where BASF holds significant pricing authority in China.
   \item Designed and deployed an \textbf{end-to-end LLM-powered (GPT-4o) market intelligence engine} that automated bilingual news monitoring, extraction, and synthesis — replacing the manual workflow entirely and delivering structured weekly and monthly insight reports directly consumed by pricing decision-makers.
   \item Partnered with marketing stakeholders to ensure output format matched executive reporting requirements, driving adoption from day one and eliminating the need for manual news triage across the team.
-  \item Supported \textbf{8+ additional digitalization initiatives} across supply chain, EHS, and production — including Power BI dashboard redesigns and data pipeline automation — serving as the technical translator between business requirements and deployed solutions.
+  \item Supported \textbf{8+ additional digitalization initiatives} across supply chain, EHS, and production, serving as the technical translator between business requirements and deployed solutions using Python, KNIME, and Power BI.
 \end{rbullet}
 
 

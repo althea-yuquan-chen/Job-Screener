@@ -6,9 +6,10 @@
       "dates": "May 2026 -- Present",
       "location": "Boston, MA",
       "bullets": [
-        "Designed and shipped a production multi-agent AI platform for a robotics startup from the ground up, built directly on the raw Gemini SDK (no agent framework) to retain full control over the tool-use loop — architecting a single orchestrator agent that dynamically delegates to three specialized sub-agents at runtime via a dedicated routing tool, re-verifying authorization on every delegation to gate two CEO-only specialists entrusted with live sales-pipeline and fundraising data, deployed on Google Cloud Run.",
-        "Integrated the platform across three external systems (Notion, Confluence, and Google Workspace — Gmail, Calendar, and Chat) via 26 custom tool functions for structured data read/write, and engineered a two-layer memory architecture — live structured-fact writes plus GCS-backed conversation logging with nightly LLM-driven reconciliation — enabling stateless webhook calls to sustain coherent multi-turn context.", 
-        "Automated two recurring company workflows end-to-end (meeting-notes ingestion and agenda generation) via scheduled Cloud Run triggers, and independently authored an 11-database knowledge-architecture plan to consolidate the company's fragmented internal documentation into a single unified system of record."
+        "Designed and shipped a production multi-agent AI platform for a robotics startup from the ground up, built directly on the raw \\textbf{Gemini SDK} (no agent framework) to retain full control over the tool-use loop — architecting a single orchestrator agent that dynamically delegates to \\textbf{three} specialized sub-agents at runtime via a dedicated routing tool, re-verifying authorization on every delegation to gate two CEO-only specialists entrusted with live sales-pipeline and fundraising data, deployed on \\textbf{Google Cloud Run}.",
+        "Integrated the platform across \\textbf{three} external systems (Notion, Confluence, and Google Workspace — Gmail, Calendar, and Chat) via \\textbf{26 custom tool functions} for structured data read/write, and engineered a two-layer memory architecture — live structured-fact writes plus GCS-backed conversation logging with nightly LLM-driven reconciliation — enabling stateless webhook calls to sustain coherent multi-turn context.",
+        "Automated \\textbf{two} recurring company workflows end-to-end (meeting-notes ingestion and agenda generation) via scheduled Cloud Run triggers, and independently authored an \\textbf{11-database} knowledge-architecture plan to consolidate the company's fragmented internal documentation into a single unified system of record.",
+        "Served as the sole engineer on this initiative, reporting directly to Whelix's CEO and owning the system end-to-end from architecture through production deployment — a level of ownership atypical for an internship role."
       ]
     },
     "basf": {
@@ -20,7 +21,11 @@
         "Identified a critical intelligence gap in BASF's MDI/TDI pricing process: marketing analysts were manually monitoring 3--4 news sources across two languages to track demand signals — an error-prone process feeding VP-level pricing decisions in a market where BASF holds significant pricing authority in China.",
         "Designed and deployed an \\textbf{end-to-end LLM-powered (GPT-4o) market intelligence engine} that automated bilingual news monitoring, extraction, and synthesis — replacing the manual workflow entirely and delivering structured weekly and monthly insight reports directly consumed by pricing decision-makers.",
         "Partnered with marketing stakeholders to ensure output format matched executive reporting requirements, driving adoption from day one and eliminating the need for manual news triage across the team.",
-        "Supported \\textbf{8+ additional digitalization initiatives} across supply chain, EHS, and production — including Power BI dashboard redesigns and data pipeline automation — serving as the technical translator between business requirements and deployed solutions."
+        "Supported \\textbf{8+ additional digitalization initiatives} across supply chain, EHS, and production, serving as the technical translator between business requirements and deployed solutions using Python, KNIME, and Power BI.",
+        "Drove the development of a plant equipment inspection system by regularly visiting chemical plants and speaking directly with on-site workers, grounding a desk-based digitalization effort in real operational needs.",
+        "Centralized \\textbf{Technical Data Sheets} across factories and languages, improving consistency and ensuring timely updates for products across multiple plants and regions.",
+        "Automated daily and monthly \\textbf{ICTP} data updates and preprocessing, providing a reliable, up-to-date data foundation for downstream business analysis.",
+        "Optimized sales and analysis dashboards in \\textbf{Power BI}, translating complex data into a clear format accessible to a wide range of business audiences."
       ]
     }
   },
@@ -102,6 +107,7 @@
       "title": "Shanghai Baosight Software Co., Ltd. \\textnormal{(Project Intern)}",
       "dates": "January -- February 2024",
       "tags": ["data engineering", "SQL", "classical ML", "backend tooling"],
+      "note": "This is real internship/professional work experience (not a school project), listed under Selected Projects only due to page-space constraints -- see SYSTEM_PROMPT selection guidance.",
       "bullets": [
         "Built a Python/SQLAlchemy tool offering one-click data queries and statistics, directly addressing analyst workflow needs.",
         "Cleaned and structured historical contract and production data from DB2 databases, building a reliable foundation for analysis.",
@@ -118,6 +124,9 @@
 
   "default_selection": {
     "selected_projects": ["thesis_uplift", "ccf_contest"],
-    "include_coursework_skills": []
+    "include_coursework_skills": [],
+    "whelix_bullets": [0, 1, 2],
+    "basf_bullets": [0, 1, 2, 3],
+    "media_center_bullets": [0, 1]
   }
 }

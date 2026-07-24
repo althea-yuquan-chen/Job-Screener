@@ -14,11 +14,18 @@ part relies on the prompt rather than a mechanical check, since scope
 inflation isn't reliably detectable by string matching.
 
 Content selection: the two fixed work-experience entries and the one
-leadership entry are included by default (bullets reordered/reworded only),
-though the leadership section is dropped entirely if the compiled resume
-overflows to a second page (see _drop_leadership); the "Selected Projects"
-section is chosen by Claude from the real, pre-written project candidates
-in resume/content_bank.json.
+leadership entry are included by default, though the leadership section is
+dropped entirely if the compiled resume overflows to a second page (see
+_drop_leadership); the "Selected Projects" section is chosen by Claude from
+the real, pre-written project candidates in resume/content_bank.json.
+
+The content bank deliberately holds more bullets per work-experience entry
+than any single resume shows (e.g. 8 candidate bullets for basf) -- Claude
+selects the best-fit SUBSET per job (see WHELIX_BULLET_COUNT etc.), not a
+reordering of all of them. This keeps the bank rich without bloating any one
+resume. Project bullets are still shown in full when a project is selected;
+only the fixed work-experience sections use subset selection, since that's
+where the bank intentionally carries more raw material than fits on a page.
 """
 
 import json
@@ -41,6 +48,13 @@ DEFAULT_TEX_PATH = RESUME_DIR / "resume.tex"
 NUM_PROJECTS_TO_SELECT = 2  # matches the page budget the template was designed for
 CHUNK_SIZE = 15  # jobs per Claude Code call -- see claude_code_client.py for why batching matters
 
+# How many bullets to show per work-experience section, out of the larger
+# pool of candidate bullets in the content bank -- Claude picks the best-fit
+# subset per job (see module docstring).
+WHELIX_BULLET_COUNT = 3
+BASF_BULLET_COUNT = 4
+MEDIA_CENTER_BULLET_COUNT = 2
+
 SYSTEM_PROMPT = """You tailor a resume's WORDING, EMPHASIS, and CONTENT SELECTION to a job \
 description — while keeping every underlying fact identical.
 
@@ -49,19 +63,33 @@ candidate projects) and a list of JOBS. Produce one tailoring selection per job,
 "index", reusing the same content bank for all of them.
 
 Rules:
-- Reword a work-experience/leadership bullet (whelix, basf, media_center) ONLY when this specific
-  job's description gives you something concrete to mirror (its own vocabulary, tools, or emphasis)
-  that the original bullet doesn't already use. If a bullet already fits the job well as written,
-  leave it unchanged — don't reword for its own sake, and don't feel obligated to make different
-  jobs' resumes look different from each other. Two jobs that are genuinely similar in focus should
-  end up with similar bullets; that's correct, not a bug.
+- The content bank gives you MORE candidate bullets per work-experience section (whelix, basf,
+  media_center) than should appear in any one resume. For each, select the best-fit SUBSET for this
+  job — exactly 3 of the whelix_bullets, exactly 4 of the basf_bullets, and exactly 2 of the
+  media_center_bullets — choosing whichever bullets that section's job-relevant strengths are best
+  represented by. A bullet's "index" is always its 0-based position in that section's list as given in
+  the content bank.
+- Reword a selected work-experience/leadership bullet ONLY when this specific job's description gives
+  you something concrete to mirror (its own vocabulary, tools, or emphasis) that the original bullet
+  doesn't already use. If a bullet already fits the job well as written, leave it unchanged — don't
+  reword for its own sake, and don't feel obligated to make different jobs' resumes look different
+  from each other. Two jobs that are genuinely similar in focus should end up with similar bullets;
+  that's correct, not a bug.
+- Every entry in project_texts (for each selected project) MUST contain EXACTLY one {index, text} item
+  per bullet in that project's original bullet list — never fewer, never more (unlike the
+  work-experience sections above, project bullets are always shown in full once a project is picked).
+  "Leave it unchanged" means include that bullet's original index with its original text copied
+  verbatim, NOT omit it from the array. An empty or partial array is invalid.
 - You must NEVER change, generalize, omit, or invent any number, percentage, quantified outcome,
   named tool/technology, company name, or other concrete fact. Every such detail from the original
   bullet must still appear, unchanged, in your reworded version.
 - You must NEVER inflate scope or seniority (e.g. turning "supported" into "led", or "contributed
   to" into "owned") beyond what the original states.
 - For each job's Selected Projects, choose exactly 2 project ids from the ones provided, best-fit
-  for that specific job's focus.
+  for that specific job's focus. Note that "baosight" is real internship/professional work
+  experience (not a school project) even though it's listed among the candidate projects for
+  space reasons — weight it accordingly and prefer it over academic/personal projects whenever
+  its data engineering/SQL/backend-tooling focus is a good match for the job.
 - You may include 0 or more coursework skill ids per job ONLY if genuinely relevant to that job —
   never to pad the resume.
 
@@ -72,7 +100,11 @@ _BULLET_ITEM_SCHEMA = {
     "type": "object",
     "properties": {
         "index": {"type": "integer"},
-        "text": {"type": "string"},
+        "text": {
+            "type": "string",
+            "description": "The bullet's text — either reworded, or the original text copied "
+                            "verbatim if left unchanged. Never omit an unchanged bullet.",
+        },
     },
     "required": ["index", "text"],
     "additionalProperties": False,
@@ -82,9 +114,24 @@ _SELECTION_SCHEMA = {
     "type": "object",
     "properties": {
         "index": {"type": "integer"},
-        "whelix": {"type": "array", "items": _BULLET_ITEM_SCHEMA},
-        "basf": {"type": "array", "items": _BULLET_ITEM_SCHEMA},
-        "media_center": {"type": "array", "items": _BULLET_ITEM_SCHEMA},
+        "whelix": {
+            "type": "array", "items": _BULLET_ITEM_SCHEMA,
+            "minItems": WHELIX_BULLET_COUNT, "maxItems": WHELIX_BULLET_COUNT,
+            "description": f"Best-fit subset of {WHELIX_BULLET_COUNT} distinct bullets (by index) chosen "
+                            "from whelix_bullets, unchanged ones included verbatim.",
+        },
+        "basf": {
+            "type": "array", "items": _BULLET_ITEM_SCHEMA,
+            "minItems": BASF_BULLET_COUNT, "maxItems": BASF_BULLET_COUNT,
+            "description": f"Best-fit subset of {BASF_BULLET_COUNT} distinct bullets (by index) chosen "
+                            "from basf_bullets, unchanged ones included verbatim.",
+        },
+        "media_center": {
+            "type": "array", "items": _BULLET_ITEM_SCHEMA,
+            "minItems": MEDIA_CENTER_BULLET_COUNT, "maxItems": MEDIA_CENTER_BULLET_COUNT,
+            "description": f"Best-fit subset of {MEDIA_CENTER_BULLET_COUNT} distinct bullets (by index) chosen "
+                            "from media_center_bullets, unchanged ones included verbatim.",
+        },
         "selected_projects": {"type": "array", "items": {"type": "string"}},
         "project_texts": {
             "type": "array",
@@ -92,7 +139,11 @@ _SELECTION_SCHEMA = {
                 "type": "object",
                 "properties": {
                     "project_id": {"type": "string"},
-                    "bullets": {"type": "array", "items": _BULLET_ITEM_SCHEMA},
+                    "bullets": {
+                        "type": "array", "items": _BULLET_ITEM_SCHEMA,
+                        "description": "One item per bullet in this project's original bullets list, "
+                                        "same count, unchanged ones included verbatim.",
+                    },
                 },
                 "required": ["project_id", "bullets"],
                 "additionalProperties": False,
@@ -137,23 +188,33 @@ def _facts_preserved(original: str, reworded: str) -> bool:
     return all(d in reworded_no_commas for d in digits) and all(a in reworded_lower for a in acronyms)
 
 
-def _process_bullets(original: list[str], items, label: str) -> list[str]:
+def _process_bullets(original: list[str], items, label: str, default_indices: list[int]) -> list[str]:
     """
     Validates Claude's proposed {index, text} list against the original
-    bullets for a section: indices must be a permutation of the original
-    set, and each proposed text must pass the fact-preservation check —
-    otherwise that bullet (or the whole section, if the shape is invalid)
-    falls back to the original verbatim text.
+    bullets for a section: it must be exactly len(default_indices) items,
+    with distinct indices into `original`, and each proposed text must pass
+    the fact-preservation check -- otherwise that bullet (or the whole
+    section, if the shape is invalid) falls back to the content bank's
+    curated default bullets for that section (default_indices).
+
+    len(default_indices) doubles as the required selection size: work-
+    experience sections pass a smaller default (e.g. 4 of 8 basf bullets) to
+    get subset selection, while project bullets pass list(range(n)) to keep
+    showing every bullet of a selected project, unchanged from before.
     """
     n = len(original)
-    if not (isinstance(items, list) and len(items) == n):
-        logger.warning(f"Invalid/missing bullet list for {label} — using original order/text.")
-        return list(original)
+    target = len(default_indices)
+    fallback = [original[i] for i in default_indices]
+
+    if not (isinstance(items, list) and len(items) == target):
+        logger.warning(f"Invalid/missing bullet list for {label} — using default selection.")
+        return fallback
 
     indices = [it.get("index") if isinstance(it, dict) else None for it in items]
-    if sorted(i for i in indices if isinstance(i, int)) != list(range(n)):
-        logger.warning(f"Invalid indices for {label} — using original order/text.")
-        return list(original)
+    valid_indices = all(isinstance(i, int) and 0 <= i < n for i in indices) and len(set(indices)) == target
+    if not valid_indices:
+        logger.warning(f"Invalid indices for {label} — using default selection.")
+        return fallback
 
     result = []
     for it, idx in zip(items, indices):
@@ -245,10 +306,17 @@ def compose_tex(bank: dict, selection: dict) -> str:
     leadership = bank["leadership"]["media_center"]
     coursework = bank["coursework_only_skills"]
 
+    defaults = bank["default_selection"]
     whelix, basf = exp["whelix"], exp["basf"]
-    whelix_texts = _process_bullets(whelix["bullets"], selection.get("whelix"), "whelix")
-    basf_texts = _process_bullets(basf["bullets"], selection.get("basf"), "basf")
-    media_texts = _process_bullets(leadership["bullets"], selection.get("media_center"), "media_center")
+    whelix_texts = _process_bullets(
+        whelix["bullets"], selection.get("whelix"), "whelix", defaults["whelix_bullets"]
+    )
+    basf_texts = _process_bullets(
+        basf["bullets"], selection.get("basf"), "basf", defaults["basf_bullets"]
+    )
+    media_texts = _process_bullets(
+        leadership["bullets"], selection.get("media_center"), "media_center", defaults["media_center_bullets"]
+    )
 
     valid_ids = set(projects.keys())
     selected_projects = _validate_projects(selection.get("selected_projects"), valid_ids)
@@ -266,7 +334,9 @@ def compose_tex(bank: dict, selection: dict) -> str:
     projects_tex_parts = []
     for pid in selected_projects:
         p = projects[pid]
-        texts = _process_bullets(p["bullets"], project_texts_by_id.get(pid), pid)
+        texts = _process_bullets(
+            p["bullets"], project_texts_by_id.get(pid), pid, list(range(len(p["bullets"])))
+        )
         projects_tex_parts.append(
             f"\\projheader{{{p['title']}}}{{{p['dates']}}}\n"
             f"\\begin{{rbullet}}\n{_render_bullets(texts)}\\end{{rbullet}}\n"
