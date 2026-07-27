@@ -13,11 +13,9 @@ never to inflate scope/seniority (e.g. "supported" -> "led"), though that
 part relies on the prompt rather than a mechanical check, since scope
 inflation isn't reliably detectable by string matching.
 
-Content selection: the two fixed work-experience entries and the one
-leadership entry are included by default, though the leadership section is
-dropped entirely if the compiled resume overflows to a second page (see
-_drop_leadership); the "Selected Projects" section is chosen by Claude from
-the real, pre-written project candidates in resume/content_bank.json.
+Content selection: the two fixed work-experience entries are included by
+default; the "Selected Projects" section is chosen by Claude from the real,
+pre-written project candidates in resume/content_bank.json.
 
 The content bank deliberately holds more bullets per work-experience entry
 than any single resume shows (e.g. 8 candidate bullets for basf) -- Claude
@@ -53,23 +51,21 @@ CHUNK_SIZE = 15  # jobs per Claude Code call -- see claude_code_client.py for wh
 # subset per job (see module docstring).
 WHELIX_BULLET_COUNT = 3
 BASF_BULLET_COUNT = 4
-MEDIA_CENTER_BULLET_COUNT = 2
 
 SYSTEM_PROMPT = """You tailor a resume's WORDING, EMPHASIS, and CONTENT SELECTION to a job \
 description — while keeping every underlying fact identical.
 
-You will be given one shared CONTENT BANK (fixed work-experience/leadership bullets and a set of
+You will be given one shared CONTENT BANK (fixed work-experience bullets and a set of
 candidate projects) and a list of JOBS. Produce one tailoring selection per job, identified by
 "index", reusing the same content bank for all of them.
 
 Rules:
-- The content bank gives you MORE candidate bullets per work-experience section (whelix, basf,
-  media_center) than should appear in any one resume. For each, select the best-fit SUBSET for this
-  job — exactly 3 of the whelix_bullets, exactly 4 of the basf_bullets, and exactly 2 of the
-  media_center_bullets — choosing whichever bullets that section's job-relevant strengths are best
-  represented by. A bullet's "index" is always its 0-based position in that section's list as given in
-  the content bank.
-- Reword a selected work-experience/leadership bullet ONLY when this specific job's description gives
+- The content bank gives you MORE candidate bullets per work-experience section (whelix, basf)
+  than should appear in any one resume. For each, select the best-fit SUBSET for this
+  job — exactly 3 of the whelix_bullets and exactly 4 of the basf_bullets — choosing whichever
+  bullets that section's job-relevant strengths are best represented by. A bullet's "index" is
+  always its 0-based position in that section's list as given in the content bank.
+- Reword a selected work-experience bullet ONLY when this specific job's description gives
   you something concrete to mirror (its own vocabulary, tools, or emphasis) that the original bullet
   doesn't already use. If a bullet already fits the job well as written, leave it unchanged — don't
   reword for its own sake, and don't feel obligated to make different jobs' resumes look different
@@ -126,12 +122,6 @@ _SELECTION_SCHEMA = {
             "description": f"Best-fit subset of {BASF_BULLET_COUNT} distinct bullets (by index) chosen "
                             "from basf_bullets, unchanged ones included verbatim.",
         },
-        "media_center": {
-            "type": "array", "items": _BULLET_ITEM_SCHEMA,
-            "minItems": MEDIA_CENTER_BULLET_COUNT, "maxItems": MEDIA_CENTER_BULLET_COUNT,
-            "description": f"Best-fit subset of {MEDIA_CENTER_BULLET_COUNT} distinct bullets (by index) chosen "
-                            "from media_center_bullets, unchanged ones included verbatim.",
-        },
         "selected_projects": {"type": "array", "items": {"type": "string"}},
         "project_texts": {
             "type": "array",
@@ -152,7 +142,7 @@ _SELECTION_SCHEMA = {
         "include_coursework_skills": {"type": "array", "items": {"type": "string"}},
     },
     "required": [
-        "index", "whelix", "basf", "media_center",
+        "index", "whelix", "basf",
         "selected_projects", "project_texts", "include_coursework_skills",
     ],
     "additionalProperties": False,
@@ -232,11 +222,9 @@ def _process_bullets(original: list[str], items, label: str, default_indices: li
 def _build_bank_payload(bank: dict) -> dict:
     exp = bank["experience"]
     projects = bank["projects"]
-    leadership = bank["leadership"]["media_center"]
     return {
         "whelix_bullets": exp["whelix"]["bullets"],
         "basf_bullets": exp["basf"]["bullets"],
-        "media_center_bullets": leadership["bullets"],
         "available_projects": {
             pid: {"title": p["title"], "bullets": p["bullets"], "tags": p.get("tags", [])}
             for pid, p in projects.items()
@@ -303,7 +291,6 @@ def compose_tex(bank: dict, selection: dict) -> str:
     """Builds the full .tex from a content bank + a (validated) selection dict."""
     exp = bank["experience"]
     projects = bank["projects"]
-    leadership = bank["leadership"]["media_center"]
     coursework = bank["coursework_only_skills"]
 
     defaults = bank["default_selection"]
@@ -313,9 +300,6 @@ def compose_tex(bank: dict, selection: dict) -> str:
     )
     basf_texts = _process_bullets(
         basf["bullets"], selection.get("basf"), "basf", defaults["basf_bullets"]
-    )
-    media_texts = _process_bullets(
-        leadership["bullets"], selection.get("media_center"), "media_center", defaults["media_center_bullets"]
     )
 
     valid_ids = set(projects.keys())
@@ -343,11 +327,6 @@ def compose_tex(bank: dict, selection: dict) -> str:
         )
     projects_tex = "\n".join(projects_tex_parts)
 
-    leadership_tex = (
-        f"\\projheader{{{leadership['title']}}}{{{leadership['dates']}}}\n"
-        f"\\begin{{rbullet}}\n{_render_bullets(media_texts)}\\end{{rbullet}}\n"
-    )
-
     coursework_ids = [c for c in (selection.get("include_coursework_skills") or []) if c in coursework]
     coursework_line = ""
     if coursework_ids:
@@ -357,7 +336,6 @@ def compose_tex(bank: dict, selection: dict) -> str:
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
     tex = template.replace("%%WORK_EXPERIENCE%%", work_experience_tex)
     tex = tex.replace("%%PROJECTS%%", projects_tex)
-    tex = tex.replace("%%LEADERSHIP%%", leadership_tex)
     tex = tex.replace("%%COURSEWORK_LINE%%", coursework_line)
     return tex
 
@@ -375,30 +353,15 @@ def _resolve_pdflatex() -> str:
 
 
 _PAGE_COUNT_RE = re.compile(r"Output written on \S+\.pdf \((\d+) page")
-_LEADERSHIP_BLOCK_RE = re.compile(
-    r"% ══ LEADERSHIP.*?(?=% ══ TECHNICAL SKILLS)", re.DOTALL
-)
 _RBULLET_BLOCK_RE = re.compile(r"\\begin\{rbullet\}(.*?)\\end\{rbullet\}", re.DOTALL)
 _ITEM_RE = re.compile(r"  \\item\b.*?(?=  \\item\b|\Z)", re.DOTALL)
 
 MAX_TRIM_ATTEMPTS = 15  # one page is a hard rule -- see _trim_one_bullet
 
 
-def _drop_leadership(tex_content: str) -> str:
-    """
-    Content selection + rewording varies length per job, so unlike the old
-    fixed-content resume, tailored variants can occasionally run long. Rather
-    than shrinking font/margins (which just crams text and reads as
-    unpolished), the fix is to drop the whole LEADERSHIP & ACTIVITIES section
-    -- it's the lowest-priority section for these roles -- when the normal
-    compile overflows to a second page.
-    """
-    return _LEADERSHIP_BLOCK_RE.sub("", tex_content, count=1)
-
-
 def _compact_tex(tex_content: str) -> str:
-    """Smaller bullet text + tighter margins -- last-resort retry if dropping
-    the leadership section alone wasn't enough to fit one page."""
+    """Smaller bullet text + tighter margins -- first retry when the normal
+    compile overflows to a second page."""
     tex_content = re.sub(
         r"\\usepackage\[left=[^\]]+\]\{geometry\}",
         r"\\usepackage[left=0.5in, right=0.5in, top=0.12in, bottom=0.12in]{geometry}",
@@ -417,10 +380,10 @@ def _trim_one_bullet(tex_content: str) -> str | None:
     """
     Removes the last bullet from whichever rbullet block currently has the
     most items (a section must keep at least 1). Last-resort fallback for
-    the one-page hard rule when dropping leadership + compacting spacing
-    still isn't enough -- trims real (truthful) content rather than
-    reducing font/margins further, since that has diminishing returns past
-    a point. Returns None once every block is down to a single bullet.
+    the one-page hard rule when compacting spacing alone still isn't enough
+    -- trims real (truthful) content rather than reducing font/margins
+    further, since that has diminishing returns past a point. Returns None
+    once every block is down to a single bullet.
     """
     best = None  # (item_count, match)
     for m in _RBULLET_BLOCK_RE.finditer(tex_content):
@@ -454,11 +417,11 @@ def _compile_pdf(tex_content: str, out_dir: Path, stem: str) -> Path:
     """
     Compiles to PDF, enforcing one page as a hard rule: never returns (or
     silently accepts) a 2+ page resume. Escalates from cheapest to most
-    invasive: drop leadership -> compact spacing -> trim real content one
-    bullet at a time (from whichever section has the most) until it fits.
-    Raises if even trimming every section down to one bullet isn't enough,
-    since at that point something is wrong with the template/content, not
-    just this job's selection.
+    invasive: compact spacing -> trim real content one bullet at a time
+    (from whichever section has the most) until it fits. Raises if even
+    trimming every section down to one bullet isn't enough, since at that
+    point something is wrong with the template/content, not just this job's
+    selection.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
     tex_path = out_dir / f"{stem}.tex"
@@ -474,12 +437,7 @@ def _compile_pdf(tex_content: str, out_dir: Path, stem: str) -> Path:
     pages = render(tex_content)
 
     if pages > 1:
-        logger.info(f"{stem} compiled to {pages} pages — retrying with leadership section dropped.")
-        tex_content = _drop_leadership(tex_content)
-        pages = render(tex_content)
-
-    if pages > 1:
-        logger.info(f"{stem} still {pages} pages — retrying with compacted spacing too.")
+        logger.info(f"{stem} compiled to {pages} pages — retrying with compacted spacing.")
         tex_content = _compact_tex(tex_content)
         pages = render(tex_content)
 
@@ -497,8 +455,8 @@ def _compile_pdf(tex_content: str, out_dir: Path, stem: str) -> Path:
 
     if pages > 1:
         raise RuntimeError(
-            f"{stem}: still {pages} pages after dropping leadership, compacting, and "
-            f"trimming {trims} bullets — one page is a hard rule, refusing to produce this resume."
+            f"{stem}: still {pages} pages after compacting and trimming {trims} bullets — "
+            f"one page is a hard rule, refusing to produce this resume."
         )
 
     if not pdf_path.exists():

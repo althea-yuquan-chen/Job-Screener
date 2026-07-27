@@ -140,7 +140,13 @@
 \needspace{5\baselineskip}
 \projheader{PromptPrompt：AI驱动的提示词优化工具}{2025年11月 -- 12月}
 \begin{rbullet}
-  \item 开发了一款CLI工具，通过澄清式提问将用户的模糊想法转化为面向LLM（Claude、ChatGPT、Gemini）的工程化提示词，并可直接在浏览器或本地AI工具中启动优化后的提示词
+  \item 为团队课程项目PromptPrompt(一个AI驱动的prompt优化工具)搭建了LLM API接入层——实现了
+对接Groq API的连接器,并将其设计为可扩展支持Gemini/OpenAI/Anthropic等多个后端,服务于
+optimizer多步骤prompt优化调用
+  \item 设计并实现了CLI工具的用户认证模块;后续主动提出并推动团队决定砍掉该功能,改用更简化的
+本地API key存储流程,在deadline前优先保证MVP范围精简、可交付,而非堆砌不必要的复杂度
+  \item 承担了团队内跨模块debug的主要职责——包括CLI交互层和评估脚本等其他组员负责的部分,
+帮助团队最终交付一个真正整合、可运行的工具
   \item 通过消除迭代式重复提问，在30道样例问题的团队内部测试中，将LLM平均Token消耗降低\textbf{65\%}
 \end{rbullet}
 
@@ -149,7 +155,13 @@
 \needspace{5\baselineskip}
 \projheader{本科毕业论文：基于决策导向学习的AUUC最大化因果推断方法研究}{2025年2月 -- 5月}
 \begin{rbullet}
-  \item 提出了一套\textbf{决策导向学习（DFL）框架}，通过复合损失函数直接优化营销ROI，并建模为整数线性规划（ILP）问题——在Criteo因果推断基准数据集上，相较基线方法实现\textbf{3\%}的增量效果提升，在个体处理效应估计上展现出更优的稳定性
+  \item 设计并实现Decision-Focused Uplift Modeling (DFUM)训练框架，解决了个体处理效应(ITE)
+预测精度与AUUC所衡量的排序型决策质量之间的错位问题——将预测损失(二元交叉熵)与一个可微分、
+softmax加权的决策损失相结合，直接优化下游的处理分配排序目标，该决策损失是对预算约束下处理
+分配这一整数规划(ILP)问题的可微松弛近似
+  \item 在包含1300万行数据的Criteo公开广告增量数据集上，将DFUM与
+S-Learner、X-Learner、UpliftRank及广义随机森林(GRF)等基线方法对比，在每组配置20个独立
+随机种子下平均AUUC提升超过2\%，并在多组trade-off超参数取值下保持稳定表现
 \end{rbullet}
 
 \vspace{2pt}
@@ -165,7 +177,14 @@
 \needspace{5\baselineskip}
 \projheader{CCF大数据与计算智能大赛 \textnormal{（1,557名参赛者）}}{2023年10月 -- 12月}
 \begin{rbullet}
-  \item 作为队长带领团队\textbf{获得全国前三（二等奖）}；负责团队任务分配，并在机器学习与运筹学两种技术路线间进行权衡决策，以优化库存决策方案
+  \item 带队在CCF大数据与计算智能大赛(\href{https://www.ccf.org.cn/}{BDCI 2023})线上线下全场景生鲜超市库存履约一体化决策赛题
+中获得1,557支参赛队伍中的第2名,设计了一套完整的"预测-备货-分配"端到端决策pipeline
+  \item 参考Kaggle M5竞赛Top1方案构建销量预测模型——设计价格、促销、销量滞后、日历等多维特征,
+  并针对不同SKU上架时间差异较大的问题,训练30/90/365天及全量历史数据四个LightGBM模型进行集成,
+  兼顾长短期销量规律的捕捉
+  \item 设计非线性备货公式,针对销量小、预测误差相对更大的SKU分配更多安全库存冗余;并针对前后场
+  库存分配这一带约束优化问题设计贪心启发式算法。在比赛时间限制下,用可行的近似解替代计算复杂度
+  过高的精确最优解
 \end{rbullet}
 
 \vspace{2pt}
@@ -179,12 +198,12 @@
 
 \vspace{2pt}
 
-\needspace{6\baselineskip}
-\projheader{南京大学 研究助理}{2023年9月 -- 2025年6月}
-\begin{rbullet}
-  \item 合作撰写了一篇关于\textbf{决策导向学习}的综述论文，独立完成引言与基准测试部分的撰写，并将\textbf{100+篇}论文整理归纳为统一的分类体系
-  \item 为\textbf{15人}规模的实验室团队提供每周文献分享，综述决策导向学习与现代因果推断方法的最新进展，面向背景各异的听众进行讲解
-\end{rbullet}
+% \needspace{6\baselineskip}
+% \projheader{南京大学 研究助理}{2023年9月 -- 2025年6月}
+% \begin{rbullet}
+%   \item 合作撰写了一篇关于\textbf{决策导向学习}的综述论文，独立完成引言与基准测试部分的撰写，并将\textbf{100+篇}论文整理归纳为统一的分类体系
+%   \item 为\textbf{15人}规模的实验室团队提供每周文献分享，综述决策导向学习与现代因果推断方法的最新进展，面向背景各异的听众进行讲解
+% \end{rbullet}
 
 \vspace{2pt}
 

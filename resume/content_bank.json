@@ -47,7 +47,8 @@
       "dates": "February -- May 2025",
       "tags": ["causal inference", "optimization", "quantitative research", "ILP", "data science"],
       "bullets": [
-        "Proposed a \\textbf{DFL framework} optimizing marketing ROI directly via composite loss, formulated as Integer Linear Programming (ILP) — achieving a \\textbf{3\\%} uplift improvement over baseline methods on the Criteo causal-inference benchmark, demonstrating superior stability in individual treatment effect estimation."
+        "Designed and implemented Decision-Focused Uplift Modeling (DFUM), a training framework that closes the gap between prediction accuracy and AUUC-measured ranking decision quality in individual treatment effect estimation — combining a binary cross-entropy prediction loss with a differentiable, softmax-weighted decision loss that directly optimizes the downstream treatment-ranking objective, motivated by an integer linear programming formulation of budget-constrained treatment assignment",
+        "Benchmarked DFUM against S-Learner, X-Learner, UpliftRank, and Generalized Random Forests across a 13M-row public ad-incrementality dataset (Criteo), achieving an average 2%+ AUUC improvement over 20 independent seeds per configuration while maintaining stable performance across a swept trade-off hyperparameter"
       ]
     },
     "research_assistant": {
@@ -64,7 +65,9 @@
       "dates": "October -- December 2023",
       "tags": ["team leadership", "ML + operations research hybrid", "supply chain", "business optimization", "consulting"],
       "bullets": [
-        "\\textbf{Ranked Top 3 (2nd Prize)} as team leader; coordinated task allocation across team members and resolved technical trade-offs between ML and Operations Research approaches to optimize inventory decision-making."
+       "Led a team to a 2nd-place finish (out of 1,557 teams) in the CCF Big Data \\& Computing Intelligence Contest (BDCI 2023), designing an end-to-end forecast-stock-allocate decision pipeline for an omnichannel fresh-grocery inventory optimization challenge",
+      "Built a demand-forecasting model on top of the Kaggle M5 competition's top-1 approach — engineering price, promotion, sales-lag, and calendar features, then training a multi-window ensemble (30/90/365-day and full-history LightGBM models) to jointly capture short- and long-term sales patterns across SKUs with heterogeneous listing dates",
+      "Designed a nonlinear safety-stock formula that allocates proportionally more buffer inventory to low-volume, harder-to-forecast SKUs, and a greedy heuristic for front-/back-store inventory allocation under service-level constraints — trading exact profit-optimal solutions (computationally intractable within the contest's time limit) for fast, near-optimal heuristics"
       ]
     },
     "promptprompt": {
@@ -72,8 +75,9 @@
       "dates": "November -- December 2025",
       "tags": ["LLM", "developer tooling", "API integration", "prompt engineering", "AI agent"],
       "bullets": [
-        "Built a CLI tool that interviews users with clarifying questions to transform vague ideas into engineered prompts for LLMs (Claude, ChatGPT, Gemini), then launches the refined prompt directly in-browser or in local AI tools.",
-        "Cut average LLM token usage by \\textbf{65\\%} in an internal test with teammates across 30 sample questions, by eliminating iterative re-prompting."
+        "Built the LLM API integration layer for a team course project (PromptPrompt, an AI-powered prompt optimizer) — implementing the connector to Groq's API and structuring it to support extensibility to Gemini/OpenAI/Anthropic as alternate backends for the optimizer's multi-step prompt-refinement calls.",
+        "Designed and implemented a user authentication module for the CLI tool; later proposed and led the team's decision to cut it in favor of a simplified local API-key storage flow, prioritizing a tighter, shippable MVP scope over unnecessary complexity ahead of the deadline.",
+        "Served as the team's primary debugger across teammates' modules — including the CLI interaction layer and evaluation scripts — helping the group ship an integrated, working tool rather than disconnected pieces."
       ]
     },
     "social_bot_detection": {
@@ -126,7 +130,6 @@
     "selected_projects": ["thesis_uplift", "ccf_contest"],
     "include_coursework_skills": [],
     "whelix_bullets": [0, 1, 2],
-    "basf_bullets": [0, 1, 2, 3],
-    "media_center_bullets": [0, 1]
+    "basf_bullets": [0, 1, 2, 3]
   }
 }

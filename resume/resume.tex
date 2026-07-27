@@ -4,7 +4,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
-\usepackage[left=0.5in, right=0.5in, top=0.2in, bottom=0.2in]{geometry}
+\usepackage[left=0.5in, right=0.5in, top=0.12in, bottom=0.12in]{geometry}
 \usepackage{enumitem}
 \usepackage{titlesec}
 \usepackage{hyperref}
@@ -90,33 +90,36 @@
 \section{WORK EXPERIENCE}
 
 \jobheader{Whelix — AI Robotics Startup (Biotech)}{AI Engineer Intern}{May 2026 -- Present}{Boston, MA}
-\begin{rbullet}
+{\small\begin{rbullet}
   \item Designed and shipped a production multi-agent AI platform for a robotics startup from the ground up, built directly on the raw \textbf{Gemini SDK} (no agent framework) to retain full control over the tool-use loop — architecting a single orchestrator agent that dynamically delegates to \textbf{three} specialized sub-agents at runtime via a dedicated routing tool, re-verifying authorization on every delegation to gate two CEO-only specialists entrusted with live sales-pipeline and fundraising data, deployed on \textbf{Google Cloud Run}.
   \item Integrated the platform across \textbf{three} external systems (Notion, Confluence, and Google Workspace — Gmail, Calendar, and Chat) via \textbf{26 custom tool functions} for structured data read/write, and engineered a two-layer memory architecture — live structured-fact writes plus GCS-backed conversation logging with nightly LLM-driven reconciliation — enabling stateless webhook calls to sustain coherent multi-turn context.
   \item Automated \textbf{two} recurring company workflows end-to-end (meeting-notes ingestion and agenda generation) via scheduled Cloud Run triggers, and independently authored an \textbf{11-database} knowledge-architecture plan to consolidate the company's fragmented internal documentation into a single unified system of record.
-\end{rbullet}
+\end{rbullet}}
 
 \jobheader{BASF Polyurethane Specialties (China) Co., Ltd.}{Digitalization Intern, Asia-Pacific Monomers}{May 2024 -- February 2025}{Shanghai, China}
-\begin{rbullet}
+{\small\begin{rbullet}
   \item Identified a critical intelligence gap in BASF's MDI/TDI pricing process: marketing analysts were manually monitoring 3--4 news sources across two languages to track demand signals — an error-prone process feeding VP-level pricing decisions in a market where BASF holds significant pricing authority in China.
   \item Designed and deployed an \textbf{end-to-end LLM-powered (GPT-4o) market intelligence engine} that automated bilingual news monitoring, extraction, and synthesis — replacing the manual workflow entirely and delivering structured weekly and monthly insight reports directly consumed by pricing decision-makers.
   \item Partnered with marketing stakeholders to ensure output format matched executive reporting requirements, driving adoption from day one and eliminating the need for manual news triage across the team.
-  \item Supported \textbf{8+ additional digitalization initiatives} across supply chain, EHS, and production, serving as the technical translator between business requirements and deployed solutions using Python, KNIME, and Power BI.
 \end{rbullet}
+}
 
 
 % ══ SELECTED PROJECTS \& AWARDS ══════════════════════════════════════════════
 \section{SELECTED PROJECTS \& AWARDS}
 
 \projheader{Thesis: Decision-Focused Uplift Modeling for AUUC Maximization}{February -- May 2025}
-\begin{rbullet}
-  \item Proposed a \textbf{DFL framework} optimizing marketing ROI directly via composite loss, formulated as Integer Linear Programming (ILP) — achieving a \textbf{3\%} uplift improvement over baseline methods on the Criteo causal-inference benchmark, demonstrating superior stability in individual treatment effect estimation.
-\end{rbullet}
+{\small\begin{rbullet}
+  \item Designed and implemented Decision-Focused Uplift Modeling (DFUM), a training framework that closes the gap between prediction accuracy and AUUC-measured ranking decision quality in individual treatment effect estimation — combining a binary cross-entropy prediction loss with a differentiable, softmax-weighted decision loss that directly optimizes the downstream treatment-ranking objective, motivated by an integer linear programming formulation of budget-constrained treatment assignment
+  \item Benchmarked DFUM against S-Learner, X-Learner, UpliftRank, and Generalized Random Forests across a 13M-row public ad-incrementality dataset (Criteo), achieving an average 2%+ AUUC improvement over 20 independent seeds per configuration while maintaining stable performance across a swept trade-off hyperparameter
+\end{rbullet}}
 
 \projheader{CCF Big Data \& Computing Intelligence Contest \textnormal{(1,557 participants)}}{October -- December 2023}
-\begin{rbullet}
-  \item \textbf{Ranked Top 3 (2nd Prize)} as team leader; coordinated task allocation across team members and resolved technical trade-offs between ML and Operations Research approaches to optimize inventory decision-making.
-\end{rbullet}
+{\small\begin{rbullet}
+  \item Led a team to a 2nd-place finish (out of 1,557 teams) in the CCF Big Data \& Computing Intelligence Contest (BDCI 2023), designing an end-to-end forecast-stock-allocate decision pipeline for an omnichannel fresh-grocery inventory optimization challenge
+  \item Built a demand-forecasting model on top of the Kaggle M5 competition's top-1 approach — engineering price, promotion, sales-lag, and calendar features, then training a multi-window ensemble (30/90/365-day and full-history LightGBM models) to jointly capture short- and long-term sales patterns across SKUs with heterogeneous listing dates
+  \item Designed a nonlinear safety-stock formula that allocates proportionally more buffer inventory to low-volume, harder-to-forecast SKUs, and a greedy heuristic for front-/back-store inventory allocation under service-level constraints — trading exact profit-optimal solutions (computationally intractable within the contest's time limit) for fast, near-optimal heuristics
+\end{rbullet}}
 
 
 % ══ TECHNICAL SKILLS ═════════════════════════════════════════════════════════
