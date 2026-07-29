@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 # ── Local imports ─────────────────────────────────────────────────────────────
 sys.path.insert(0, str(Path(__file__).parent))
 from discover  import get_companies
-from fetcher   import fetch_all_companies, fetch_workday_descriptions, fetch_smartrecruiters_descriptions
+from fetcher   import fetch_all_companies, fetch_workday_descriptions, fetch_smartrecruiters_descriptions, fetch_eightfold_descriptions
 from filter    import passes_keyword_filter, passes_work_auth_filter, deduplicate
 from scorer    import score_jobs_batch
 from tailor    import tailor_resumes
@@ -101,6 +101,11 @@ def run():
     if smartrecruiters_jobs:
         logger.info(f"Fetching full descriptions for {len(smartrecruiters_jobs)} SmartRecruiters postings...")
         fetch_smartrecruiters_descriptions(smartrecruiters_jobs)
+
+    eightfold_jobs = [j for j in new_jobs if j.get("ats") == "eightfold"]
+    if eightfold_jobs:
+        logger.info(f"Fetching full descriptions for {len(eightfold_jobs)} Eightfold postings...")
+        fetch_eightfold_descriptions(eightfold_jobs)
 
     # ── Step 5.5: Work-authorization filter ───────────────────────────────────
     # Now that every job has full JD text, drop postings that require US

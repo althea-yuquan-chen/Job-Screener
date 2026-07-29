@@ -226,6 +226,176 @@ def fetch_smartrecruiters_descriptions(jobs: list[dict], max_workers: int = 10) 
                 job["description"] = ""
 
 
+# ── Amazon ────────────────────────────────────────────────────────────────────
+
+def fetch_amazon(company_id: str, company_name: str) -> list[dict]:
+    """
+    Amazon runs its own careers site (amazon.jobs), not a shared ATS — but its
+    search page calls a public, unauthenticated JSON endpoint that returns
+    full description text inline, so (unlike Workday/SmartRecruiters) no
+    separate per-job detail request is needed.
+
+    Scoped to the "Software Development" category to keep volume tractable —
+    Amazon posts thousands of non-software roles (ops, retail, fulfillment,
+    etc.) that are out of scope for this candidate profile.
+    """
+    jobs = []
+    offset = 0
+    PAGE_SIZE = 100
+    MAX_PAGES = 20
+    url = "https://www.amazon.jobs/en/search.json"
+    try:
+        for _ in range(MAX_PAGES):
+            params = {
+                "country": "USA",
+                "category[]": "Software Development",
+                "offset": offset,
+                "result_limit": PAGE_SIZE,
+                "sort": "recent",
+            }
+            r = requests.get(url, headers=HEADERS, params=params, timeout=20)
+            r.raise_for_status()
+            data = r.json()
+            postings = data.get("jobs", [])
+            if not postings:
+                break
+            for j in postings:
+                job_path = j.get("job_path", "")
+                jobs.append({
+                    "company": company_name,
+                    "title": j.get("title", ""),
+                    "location": j.get("normalized_location", "") or j.get("location", ""),
+                    "url": f"https://www.amazon.jobs{job_path}" if job_path else "",
+                    "job_id": j.get("id_icims", "") or j.get("id", ""),
+                    "description": _clean_html(j.get("description", "")),
+                    "posted_at": _amazon_date_to_iso(j.get("posted_date", "")),
+                    "ats": "amazon",
+                })
+            offset += PAGE_SIZE
+            if len(postings) < PAGE_SIZE or offset >= data.get("hits", 0):
+                break
+        return jobs
+    except Exception as e:
+        logger.warning(f"Amazon fetch failed for {company_name} (got {len(jobs)} before failure): {e}")
+        return jobs
+
+
+def _amazon_date_to_iso(date_str: str) -> str:
+    """Amazon's posted_date is a string like 'July 28, 2026'."""
+    if not date_str:
+        return ""
+    from datetime import datetime
+    try:
+        return datetime.strptime(date_str, "%B %d, %Y").strftime("%Y-%m-%d")
+    except Exception:
+        return ""
+
+
+# ── Eightfold ─────────────────────────────────────────────────────────────────
+
+def fetch_eightfold(host: str, domain: str, company_name: str) -> list[dict]:
+    """
+    Eightfold.ai is a recruiting SaaS platform some large employers white-label
+    under their own domain (e.g. Microsoft's careers site at
+    apply.careers.microsoft.com runs on Eightfold under the hood — there's no
+    way to tell from the domain name alone; this was found by inspecting the
+    site's own network requests). Its public search API (`/api/pcsx/search`)
+    needs no auth, but only returns 10 results per page and no description
+    text — full JD requires a separate per-job request; see
+    fetch_eightfold_description, called only on jobs that survive the keyword
+    filter (same lazy-enrichment pattern as fetch_workday_description).
+
+    Any other Eightfold-hosted company can be added via config alone (its own
+    host + domain), no new code needed — see companies_supplemental.json.
+    """
+    if not host or not domain:
+        logger.warning(f"No Eightfold host/domain configured for {company_name}")
+        return []
+
+    jobs = []
+    offset = 0
+    PAGE_SIZE = 10   # fixed by the API — larger `num`/`limit` params are ignored
+    MAX_PAGES = 100  # bounds runtime for a large employer (Microsoft ~900 US postings)
+    url = f"https://{host}/api/pcsx/search"
+    try:
+        for page_num in range(MAX_PAGES):
+            if page_num > 0:
+                time.sleep(0.4)  # the 10-results-per-page cap means ~90 requests for
+                                  # a large employer; firing them back-to-back triggers
+                                  # a 429 from Eightfold's rate limiter after ~25 requests
+            params = {
+                "domain": domain,
+                "query": "",
+                "location": "United States",
+                "start": offset,
+                "filter_include_remote": 1,
+            }
+            r = _get_with_retry(url, params)
+            data = r.json().get("data", {})
+            postings = data.get("positions", [])
+            if not postings:
+                break
+            for j in postings:
+                position_id = j.get("id", "")
+                posted_ts = j.get("postedTs", 0)
+                jobs.append({
+                    "company": company_name,
+                    "title": j.get("name", ""),
+                    "location": ", ".join(j.get("locations", []) or []),
+                    "url": f"https://{host}{j.get('positionUrl', '')}" if j.get("positionUrl") else "",
+                    "job_id": str(position_id),
+                    "description": "",
+                    "posted_at": _timestamp_to_date(posted_ts * 1000) if posted_ts else "",
+                    "ats": "eightfold",
+                    "_eightfold_host": host,
+                    "_eightfold_domain": domain,
+                    "_eightfold_position_id": position_id,
+                })
+            offset += PAGE_SIZE
+            if len(postings) < PAGE_SIZE or offset >= data.get("count", 0):
+                break
+        return jobs
+    except Exception as e:
+        logger.warning(f"Eightfold fetch failed for {company_name} (got {len(jobs)} before failure): {e}")
+        return jobs
+
+
+def fetch_eightfold_description(job: dict) -> str:
+    """Fetches full JD text for a single Eightfold job (see fetch_eightfold docstring)."""
+    host = job.get("_eightfold_host", "")
+    domain = job.get("_eightfold_domain", "")
+    position_id = job.get("_eightfold_position_id", "")
+    if not (host and domain and position_id):
+        return ""
+    url = f"https://{host}/api/pcsx/position_details"
+    try:
+        r = requests.get(
+            url, headers=HEADERS,
+            params={"position_id": position_id, "domain": domain, "hl": "en"},
+            timeout=15,
+        )
+        r.raise_for_status()
+        html = r.json().get("data", {}).get("jobDescription", "")
+        return _clean_html(html)
+    except Exception as e:
+        logger.warning(f"Eightfold detail fetch failed for {job.get('company')} — {job.get('title')}: {e}")
+        return ""
+
+
+def fetch_eightfold_descriptions(jobs: list[dict], max_workers: int = 10) -> None:
+    """Enriches Eightfold jobs in-place with full JD text, concurrently (same
+    pattern as fetch_workday_descriptions)."""
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(fetch_eightfold_description, j): j for j in jobs}
+        for future in as_completed(futures):
+            job = futures[future]
+            try:
+                job["description"] = future.result()
+            except Exception as e:
+                logger.warning(f"Eightfold description enrichment failed for {job.get('company')} — {job.get('title')}: {e}")
+                job["description"] = ""
+
+
 # ── Workday ───────────────────────────────────────────────────────────────────
 
 def _workday_headers(workday_url: str) -> dict:
@@ -373,6 +543,10 @@ def fetch_jobs_for_company(company: dict) -> list[dict]:
         jobs = fetch_smartrecruiters(cid, name)
     elif ats == "workday":
         jobs = fetch_workday(company.get("workday_url", ""), name)
+    elif ats == "amazon":
+        jobs = fetch_amazon(cid, name)
+    elif ats == "eightfold":
+        jobs = fetch_eightfold(company.get("eightfold_host", ""), company.get("eightfold_domain", ""), name)
     else:
         logger.warning(f"Unknown ATS '{ats}' for {name}")
         jobs = []
@@ -408,6 +582,19 @@ def fetch_all_companies(companies: list[dict], max_workers: int = 10) -> list[di
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _get_with_retry(url: str, params: dict, max_retries: int = 3) -> requests.Response:
+    """GET with backoff retry on 429 (rate limit). Used by Eightfold, whose
+    pagination needs far more requests per company than the other ATS
+    platforms and hits its rate limiter if retried naively."""
+    for attempt in range(max_retries):
+        r = requests.get(url, headers=HEADERS, params=params, timeout=20)
+        if r.status_code == 429 and attempt < max_retries - 1:
+            time.sleep(2 * (attempt + 1))
+            continue
+        r.raise_for_status()
+        return r
+
 
 def _clean_html(html: str) -> str:
     if not html:

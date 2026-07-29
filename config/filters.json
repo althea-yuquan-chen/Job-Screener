@@ -1,5 +1,9 @@
 {
   "include_title_keywords": [
+    "software engineer",
+    "swe",
+    "sde",
+    "new grad",
     "solutions engineer",
     "forward deployed",
     "agent engineer",
@@ -21,6 +25,7 @@
   ],
   "exclude_title_keywords": [
     "senior",
+    "sr",
     "staff",
     "principal",
     "director",

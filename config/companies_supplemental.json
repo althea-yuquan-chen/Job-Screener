@@ -17,6 +17,9 @@
   {"name": "Perplexity AI",    "ats": "ashby",      "id": "perplexity",       "tier": 1},
   {"name": "Cresta",           "ats": "greenhouse", "id": "cresta",           "tier": 1},
   {"name": "Natera",           "ats": "greenhouse", "id": "natera",           "tier": 1},
+  {"name": "Amazon",           "ats": "amazon",     "id": "amazon",           "tier": 1},
+  {"name": "Microsoft",        "ats": "eightfold",  "id": "microsoft",        "tier": 1,
+    "eightfold_host": "apply.careers.microsoft.com", "eightfold_domain": "microsoft.com"},
 
   {"name": "ZS Associates",    "ats": "workday",    "id": "zsassociates",     "tier": 2,
     "workday_url": "https://zsassociates.wd5.myworkdayjobs.com/wday/cxs/zsassociates/External/jobs"},
