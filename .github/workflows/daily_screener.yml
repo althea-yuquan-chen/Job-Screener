@@ -54,18 +54,20 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended
 
       # Restore the seen-job-IDs file from previous run (stored as artifact).
-      # Key bumped to v2 to force a one-time reset: scoring picked up the
-      # full content-bank detail (not just the summarized profile) and the
-      # qualifying threshold dropped 75->65, so jobs dismissed as "seen"
-      # under the old scoring never got a chance to be re-evaluated. v2
-      # starts every job fresh once; after that it behaves as before.
+      # Key bumped to v3 (v2 was cancelled mid-run under the OLD, all-at-
+      # once main.py, which marks every deduped job "seen" before scoring
+      # even starts -- if that cancelled run's cleanup step still saved a
+      # cache, it would have poisoned v2 with ~5500 "seen" jobs that were
+      # never actually scored. v3 guarantees a genuinely clean slate for the
+      # rerun on the new incremental-write main.py. After this rerun
+      # completes, behaves as a normal cache again.
       - name: Restore seen job IDs
         uses: actions/cache@v4
         with:
           path: .seen_job_ids.json
-          key: seen-job-ids-v2-${{ github.run_id }}
+          key: seen-job-ids-v3-${{ github.run_id }}
           restore-keys: |
-            seen-job-ids-v2-
+            seen-job-ids-v3-
 
       - name: Run job screener
         env:
@@ -84,4 +86,4 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: .seen_job_ids.json
-          key: seen-job-ids-v2-${{ github.run_id }}
+          key: seen-job-ids-v3-${{ github.run_id }}
