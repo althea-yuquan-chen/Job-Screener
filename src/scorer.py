@@ -8,9 +8,22 @@ draws on a Claude subscription's included usage rather than metered API
 billing. Jobs are scored in chunks (not one Claude Code invocation per job)
 because every invocation pays a fixed session-startup overhead -- batching
 amortizes that cost across many jobs instead of paying it per job.
+
+candidate_profile.txt is a hand-curated summary (identity, strengths, ideal-
+role framing) and deliberately compresses the underlying work history --
+e.g. it says "AI agentic systems" where the real Whelix bullet names Gemini
+SDK, Google Cloud Run, and GCS specifically. That compression means a JD
+naming a specific tool/technology/domain the profile summarized away
+wouldn't match against anything the scorer can see. To catch those, the
+prompt also includes the full, uncompressed bullets from resume/content_
+bank.json (the same source of truth tailor.py draws on) as a second,
+detail-level section alongside the profile's framing -- see
+DETAILED_BACKGROUND below.
 """
 
+import json
 import logging
+import re
 from pathlib import Path
 
 from claude_code_client import run_prompt, ClaudeCodeError
@@ -20,11 +33,64 @@ logger = logging.getLogger(__name__)
 _profile_path = Path(__file__).parent.parent / "config" / "candidate_profile.txt"
 CANDIDATE_PROFILE = _profile_path.read_text()
 
+_content_bank_path = Path(__file__).parent.parent / "resume" / "content_bank.json"
+
+_LATEX_HREF_RE = re.compile(r"\\href\{[^}]*\}\{([^}]*)\}")
+_LATEX_CMD_RE = re.compile(r"\\(?:textbf|textnormal|textit|emph)\{([^}]*)\}")
+_LATEX_ESCAPE_RE = re.compile(r"\\([&%$#_{}])")
+
+
+def _clean_latex(text: str) -> str:
+    """Strips the LaTeX markup used in content_bank.json bullets (\\textbf,
+    \\href, escaped \\& / \\%, etc.) down to plain text for the prompt."""
+    text = _LATEX_HREF_RE.sub(r"\1", text)
+    prev = None
+    while prev != text:
+        prev = text
+        text = _LATEX_CMD_RE.sub(r"\1", text)
+    return _LATEX_ESCAPE_RE.sub(r"\1", text)
+
+
+def _build_detailed_background(bank: dict) -> str:
+    """Renders every work-experience and project bullet in the content bank
+    (full, uncompressed) as plain text, for matching specific tools/tech/
+    domains the summarized candidate_profile.txt doesn't spell out."""
+    lines = []
+    for key in ("whelix", "basf"):
+        e = bank["experience"][key]
+        lines.append(f"{e['company']} — {e['title']} ({e['dates']}, {e['location']})")
+        lines.extend(f"  - {_clean_latex(b)}" for b in e["bullets"])
+        lines.append("")
+
+    for p in bank["projects"].values():
+        tags = ", ".join(p.get("tags", []))
+        header = _clean_latex(p["title"]) + f" ({p['dates']})"
+        if tags:
+            header += f" — tags: {tags}"
+        lines.append(header)
+        lines.extend(f"  - {_clean_latex(b)}" for b in p["bullets"])
+        lines.append("")
+
+    coursework = bank.get("coursework_only_skills") or {}
+    if coursework:
+        lines.append("Coursework-only skills (no production use): " + ", ".join(coursework.values()))
+
+    return "\n".join(lines).strip()
+
+
+DETAILED_BACKGROUND = _build_detailed_background(json.loads(_content_bank_path.read_text(encoding="utf-8")))
+
 CHUNK_SIZE = 40  # jobs per Claude Code call -- keeps prompt/response size manageable
 MAX_DESCRIPTION_CHARS = 3000  # per-job description truncation for the batch prompt only
 
 SYSTEM_PROMPT = """You are a recruiter evaluating job-candidate fit.
-You will be given a candidate profile and a list of job postings.
+You will be given a candidate profile (identity, strengths, ideal-role framing), a detailed
+background section (the full, uncompressed work-experience and project bullets the profile
+summary condenses), and a list of job postings. Use the detailed background to catch matches on
+specific tools/technologies/domains the profile's summary doesn't spell out by name (e.g. a JD
+naming a specific cloud platform, ML technique, or domain that only appears in the detailed
+bullets) -- but weigh fit using the profile's strengths and ideal-role framing, not just keyword
+overlap with the detailed bullets.
 Score every job in the list and return a JSON object matching the given schema.
 
 Scoring guide:
@@ -100,6 +166,8 @@ def _build_prompt(jobs: list[dict]) -> str:
     jobs_block = "\n\n---\n\n".join(postings)
     return (
         f"CANDIDATE PROFILE:\n{CANDIDATE_PROFILE}\n\n"
+        f"===\n\nDETAILED BACKGROUND (full, uncompressed work-experience and project bullets):\n"
+        f"{DETAILED_BACKGROUND}\n\n"
         f"===\n\nJOB POSTINGS ({len(jobs)} total):\n\n{jobs_block}"
     )
 
