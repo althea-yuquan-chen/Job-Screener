@@ -51,14 +51,19 @@ jobs:
       - name: Install LaTeX (for tailored resume PDFs)
         run: sudo apt-get update && sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended
 
-      # Restore the seen-job-IDs file from previous run (stored as artifact)
+      # Restore the seen-job-IDs file from previous run (stored as artifact).
+      # Key bumped to v2 to force a one-time reset: scoring picked up the
+      # full content-bank detail (not just the summarized profile) and the
+      # qualifying threshold dropped 75->65, so jobs dismissed as "seen"
+      # under the old scoring never got a chance to be re-evaluated. v2
+      # starts every job fresh once; after that it behaves as before.
       - name: Restore seen job IDs
         uses: actions/cache@v4
         with:
           path: .seen_job_ids.json
-          key: seen-job-ids-${{ github.run_id }}
+          key: seen-job-ids-v2-${{ github.run_id }}
           restore-keys: |
-            seen-job-ids-
+            seen-job-ids-v2-
 
       - name: Run job screener
         env:
@@ -77,4 +82,4 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: .seen_job_ids.json
-          key: seen-job-ids-${{ github.run_id }}
+          key: seen-job-ids-v2-${{ github.run_id }}
