@@ -110,6 +110,10 @@ def passes_work_auth_filter(job: dict) -> bool:
     return True
 
 
+def job_key(job: dict) -> str:
+    return f"{job['company']}::{job['job_id']}"
+
+
 def deduplicate(jobs: list[dict], seen_ids: set) -> tuple[list[dict], set]:
     """
     Remove jobs already seen in previous runs (by job_id + company key).
@@ -117,7 +121,7 @@ def deduplicate(jobs: list[dict], seen_ids: set) -> tuple[list[dict], set]:
     """
     new_jobs = []
     for job in jobs:
-        key = f"{job['company']}::{job['job_id']}"
+        key = job_key(job)
         if key not in seen_ids:
             new_jobs.append(job)
             seen_ids.add(key)

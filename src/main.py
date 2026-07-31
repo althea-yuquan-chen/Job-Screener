@@ -8,11 +8,10 @@ Flow:
   4. Deduplicate against previously-seen jobs
   5. Enrich Workday survivors with full JD text (deferred — one request per
      company for the list, but description text needs a per-job request)
-  6. AI score remaining jobs against candidate profile (Claude API)
-  7. For jobs scoring high enough: generate a tailored resume PDF and upload
-     it to Drive
-  8. Write all scored jobs to Google Sheet (deduped), with a resume link for
-     the tailored ones
+  6. Process remaining jobs one scoring-chunk at a time: AI score the chunk
+     (Claude API), tailor + upload resumes for anything scoring high enough,
+     write those rows to the Google Sheet, then mark the chunk as seen —
+     all before moving to the next chunk (see run() docstring for why).
 """
 
 import json
@@ -33,8 +32,8 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, str(Path(__file__).parent))
 from discover  import get_companies
 from fetcher   import fetch_all_companies, fetch_workday_descriptions, fetch_smartrecruiters_descriptions, fetch_eightfold_descriptions
-from filter    import passes_keyword_filter, passes_work_auth_filter, deduplicate
-from scorer    import score_jobs_batch
+from filter    import passes_keyword_filter, passes_work_auth_filter, job_key
+from scorer    import score_jobs_batch, CHUNK_SIZE as SCORE_CHUNK_SIZE
 from tailor    import tailor_resumes
 from drive     import upload_resume
 from sheets    import append_jobs
@@ -52,6 +51,38 @@ def load_seen_ids() -> set:
 
 def save_seen_ids(seen: set):
     SEEN_IDS_FILE.write_text(json.dumps(list(seen)))
+
+
+def _process_chunk(chunk: list[dict]) -> tuple[int, int]:
+    """
+    Scores one chunk, then immediately tailors/uploads/writes anything that
+    qualifies. Returns (num_qualifying, num_written). Never raises -- a
+    failure tailoring/uploading/writing this chunk is logged and swallowed,
+    since the chunk's jobs still got scored and should still be marked seen
+    by the caller rather than retried forever.
+    """
+    score_jobs_batch(chunk, chunk_size=len(chunk))  # already <= SCORE_CHUNK_SIZE -- one API call
+    qualifying = [j for j in chunk if j.get("score", 0) >= SCORE_THRESHOLD]
+    if not qualifying:
+        return 0, 0
+
+    try:
+        pdf_paths = tailor_resumes(qualifying)
+        for i, j in enumerate(qualifying):
+            pdf_path = pdf_paths.get(i)
+            if not pdf_path:
+                j["resume_link"] = ""
+                continue
+            filename = f"{j['company']} — {j['title']}.pdf".replace("/", "-")
+            link = upload_resume(pdf_path, filename)
+            j["resume_link"] = link or ""
+
+        rows_written = append_jobs(qualifying)
+    except Exception as e:
+        logger.warning(f"Tailoring/upload/sheet-write failed for this chunk: {e}")
+        return len(qualifying), 0
+
+    return len(qualifying), rows_written
 
 
 def run():
@@ -74,14 +105,15 @@ def run():
     logger.info(f"After keyword filter: {len(keyword_passed)} postings")
 
     # ── Step 4: Deduplicate (skip jobs we've scored before) ───────────────────
-    new_jobs, seen_ids = deduplicate(keyword_passed, seen_ids)
+    # Deliberately does NOT mark these jobs as seen yet (unlike a plain
+    # dedup) -- scoring/tailoring can run long enough to hit the workflow
+    # timeout, and if a job is marked seen before it's actually been through
+    # the pipeline, an interrupted run permanently drops it (next run's
+    # dedup skips it forever, even though it was never scored). Each job is
+    # only added to seen_ids once its chunk has actually finished processing
+    # -- see the loop below.
+    new_jobs = [j for j in keyword_passed if job_key(j) not in seen_ids]
     logger.info(f"New (not previously seen): {len(new_jobs)} postings")
-
-    # Persist immediately: scoring/tailoring can run long enough to hit the
-    # workflow timeout, and if that kills the process mid-run, today's dedup
-    # progress must not be lost -- otherwise tomorrow's run sees the same
-    # backlog as "new" again and can time out on repeat.
-    save_seen_ids(seen_ids)
 
     if not new_jobs:
         logger.info("No new jobs to score today. Done.")
@@ -117,45 +149,37 @@ def run():
 
     if not new_jobs:
         logger.info("No jobs left after work-authorization filter. Done.")
-        save_seen_ids(seen_ids)
         return
 
-    # ── Step 6: AI scoring ────────────────────────────────────────────────────
-    logger.info(f"\nScoring {len(new_jobs)} jobs with Claude API...")
-    scored_jobs = score_jobs_batch(new_jobs)
+    # ── Step 6: score → tailor → write, one chunk at a time ──────────────────
+    # Processing (and persisting) a full chunk before moving to the next one
+    # means an interruption (timeout, crash) only loses at most one chunk's
+    # worth of work -- everything before it is already written to the sheet,
+    # and everything after it is still unmarked-seen so tomorrow's run picks
+    # up where this one left off, instead of the old all-or-nothing behavior
+    # where nothing was written until every job had been scored.
+    logger.info(f"\nScoring {len(new_jobs)} jobs with Claude API, {SCORE_CHUNK_SIZE} at a time...")
+    total_qualifying = 0
+    total_written = 0
 
-    # Sort by score for logging
-    scored_jobs.sort(key=lambda j: j.get("score", 0), reverse=True)
+    for start in range(0, len(new_jobs), SCORE_CHUNK_SIZE):
+        chunk = new_jobs[start:start + SCORE_CHUNK_SIZE]
+        logger.info(f"  Chunk {start + 1}-{start + len(chunk)} of {len(new_jobs)}...")
 
-    logger.info("\n── TOP MATCHES ──────────────────────────────────────")
-    for j in scored_jobs[:10]:
-        logger.info(f"  {j['score']:3d}%  [{j['company']}]  {j['title']}  ({j['location']})")
+        num_qualifying, num_written = _process_chunk(chunk)
+        total_qualifying += num_qualifying
+        total_written += num_written
 
-    qualifying_jobs = [j for j in scored_jobs if j.get("score", 0) >= SCORE_THRESHOLD]
-    logger.info(f"\nJobs scoring {SCORE_THRESHOLD}+ (tailored resume + written to sheet): {len(qualifying_jobs)}")
+        for j in chunk:
+            seen_ids.add(job_key(j))
+        save_seen_ids(seen_ids)
 
-    # ── Step 7: Tailor + upload resumes for high-scoring matches ──────────────
-    pdf_paths = tailor_resumes(qualifying_jobs)
-    for i, j in enumerate(qualifying_jobs):
-        pdf_path = pdf_paths.get(i)
-        if not pdf_path:
-            j["resume_link"] = ""
-            continue
-        filename = f"{j['company']} — {j['title']}.pdf".replace("/", "-")
-        link = upload_resume(pdf_path, filename)
-        j["resume_link"] = link or ""
-
-    # ── Step 8: Write to Google Sheet ──────────────────────────────────────────
-    logger.info("\nWriting to Google Sheet...")
-    rows_written = append_jobs(qualifying_jobs)
-    logger.info(f"Rows written: {rows_written}")
-
-    # ── Save seen IDs ─────────────────────────────────────────────────────────
-    save_seen_ids(seen_ids)
+        for j in sorted(chunk, key=lambda j: j.get("score", 0), reverse=True)[:3]:
+            logger.info(f"    {j.get('score', 0):3d}%  [{j['company']}]  {j['title']}  ({j['location']})")
 
     logger.info("\n" + "=" * 60)
-    logger.info(f"Done. {len(scored_jobs)} jobs scored, {rows_written} written, "
-                f"{len(qualifying_jobs)} tailored resumes generated.")
+    logger.info(f"Done. {len(new_jobs)} jobs scored, {total_written} written, "
+                f"{total_qualifying} tailored resumes generated.")
     logger.info("=" * 60)
 
 
