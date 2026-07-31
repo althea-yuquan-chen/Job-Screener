@@ -41,7 +41,7 @@ from sheets    import append_jobs
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 SEEN_IDS_FILE = Path(__file__).parent.parent / ".seen_job_ids.json"
-SCORE_THRESHOLD = 75  # jobs scoring at/above this get a tailored resume + Drive upload, and are written to the sheet
+SCORE_THRESHOLD = 65  # jobs scoring at/above this get a tailored resume + Drive upload, and are written to the sheet
 
 
 def load_seen_ids() -> set:

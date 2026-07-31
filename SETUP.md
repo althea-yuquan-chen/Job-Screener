@@ -263,7 +263,7 @@ Edit `config/candidate_profile.txt` as your experience grows.
 Edit `resume/resume.tex` — every tailored resume is generated from this file, so keep it current.
 
 **Change the score threshold (tailored resume + sheet inclusion):**
-In `src/main.py`, change `SCORE_THRESHOLD = 75` to any value.
+In `src/main.py`, change `SCORE_THRESHOLD = 65` to any value.
 
 **Run weekdays only:**
 In `.github/workflows/daily_screener.yml`, change `*` to `1-5` in the cron line.

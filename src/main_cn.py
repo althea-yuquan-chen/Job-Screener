@@ -48,7 +48,7 @@ from sheets      import append_jobs
 SEEN_IDS_FILE = Path(__file__).parent.parent / ".seen_job_ids_cn.json"
 RESUME_ZH_PDF = Path(__file__).parent.parent / "resume" / "resume_zh.pdf"
 SHEET_NAME = "China Jobs"
-SCORE_THRESHOLD = 75
+SCORE_THRESHOLD = 65
 
 
 def load_seen_ids() -> set:
