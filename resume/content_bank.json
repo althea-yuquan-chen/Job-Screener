@@ -48,7 +48,7 @@
       "tags": ["causal inference", "optimization", "quantitative research", "ILP", "data science"],
       "bullets": [
         "Designed and implemented Decision-Focused Uplift Modeling (DFUM), a training framework that closes the gap between prediction accuracy and AUUC-measured ranking decision quality in individual treatment effect estimation — combining a binary cross-entropy prediction loss with a differentiable, softmax-weighted decision loss that directly optimizes the downstream treatment-ranking objective, motivated by an integer linear programming formulation of budget-constrained treatment assignment",
-        "Benchmarked DFUM against S-Learner, X-Learner, UpliftRank, and Generalized Random Forests across a 13M-row public ad-incrementality dataset (Criteo), achieving an average 2%+ AUUC improvement over 20 independent seeds per configuration while maintaining stable performance across a swept trade-off hyperparameter"
+        "Benchmarked DFUM against S-Learner, X-Learner, UpliftRank, and Generalized Random Forests across a 13M-row public ad-incrementality dataset (Criteo), achieving an average 2\\%+ AUUC improvement over 20 independent seeds per configuration while maintaining stable performance across a swept trade-off hyperparameter"
       ]
     },
     "research_assistant": {
