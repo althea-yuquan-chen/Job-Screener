@@ -16,7 +16,9 @@ on:
 jobs:
   screen-jobs:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    # 360 is GitHub's hard cap for a job on hosted runners -- there's no way
+    # to actually disable the limit, this is the maximum it can be raised to.
+    timeout-minutes: 360
 
     steps:
       - name: Checkout repo
