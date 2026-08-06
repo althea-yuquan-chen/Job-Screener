@@ -74,16 +74,20 @@ STRENGTHS FOR MATCHING
 - Strong track record of end-to-end ownership and independent delivery
 
 IDEAL ROLE CHARACTERISTICS (in priority order)
-1. Forward Deployed Engineer, Agent Engineer, AI Implementation Engineer, Solutions Engineer
-   at AI-native companies — building/deploying agentic or LLM systems directly with customers.
-   This is the strongest fit: matches current Whelix work exactly (build + own architecture
-   with leadership) and the rare combo of building agentic systems AND communicating with
-   business stakeholders.
+1. Agent Engineer, AI Implementation Engineer, Solutions Engineer at AI-native companies —
+   building/deploying agentic or LLM systems directly with customers. This is the strongest
+   fit: matches current Whelix work exactly (build + own architecture with leadership) and
+   the rare combo of building agentic systems AND communicating with business stakeholders.
 2. AI/tech-forward consulting and Technical Consultant roles — leverages BASF cross-functional,
    enterprise (Fortune 500) experience and bilingual APAC-facing value.
 3. Data Scientist / Data Analyst / Decision Analytics roles — solid technical fit (uplift
    modeling, decision trees, research background) but secondary to the above two.
-4. Generic Product Manager / Business Analyst roles without a clear technical or AI component
+4. Forward Deployed Engineer (FDE) roles — lower priority despite the title-level overlap with
+   #1: most FDE postings are written for experienced SWE/SDE hires, since the role leans on
+   client trust and credibility that new grads typically don't have yet. Still worth applying
+   to (especially if a posting explicitly welcomes new grads), but don't treat it as an
+   automatic top-tier match on title alone.
+5. Generic Product Manager / Business Analyst roles without a clear technical or AI component
    are a weak fit — no traditional PM experience; avoid over-indexing here.
 - New grad / entry-level / associate level only
 - Enterprise software, AI-native companies, or data-heavy consulting

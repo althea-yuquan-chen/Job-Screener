@@ -110,14 +110,18 @@ Key factors for THIS candidate:
   elsewhere) — including "remote" roles that are only remote-eligible within another country, even
   if the location field alone doesn't make that clear. Only US-based (including US-remote) roles
   are viable.
-- Reward highest (90+): Forward Deployed Engineer, Agent Engineer, AI Implementation Engineer,
-  Solutions Engineer roles at AI-native companies — building/deploying agentic or LLM systems
-  directly with customers
+- Reward highest (90+): Agent Engineer, AI Implementation Engineer, Solutions Engineer roles at
+  AI-native companies — building/deploying agentic or LLM systems directly with customers
 - Reward strongly (75-89): AI/tech-forward consulting (e.g. BCG X, Slalom-type technical
   consulting) and Technical Consultant roles that combine engineering with client-facing work
 - Reward moderately (60-74): Data Scientist/Analyst and general Decision Analytics roles —
   candidate has the technical background but recent experience is more applied-engineering
   than research-focused
+- Reward moderately, not highest (60-74): Forward Deployed Engineer (FDE) roles — despite the
+  title-level similarity to Agent Engineer/AI Implementation Engineer, most FDE postings are
+  written for experienced SWE/SDE hires (the role leans on client trust/credibility that new
+  grads don't have yet). Score higher (75+) only if the JD explicitly welcomes new grads /
+  entry-level candidates or states 0-2 years experience is fine.
 - Reward moderately: life sciences domain, bilingual (Chinese/English)
 - Reward lightly, do not over-index: generic Product Manager or Business Analyst roles with
   no clear technical/AI component — candidate has no traditional PM experience
