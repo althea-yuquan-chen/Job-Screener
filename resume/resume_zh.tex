@@ -5,8 +5,8 @@
 \setCJKmainfont{Microsoft YaHei}
 \setCJKsansfont{Microsoft YaHei}
 \setmainfont{Times New Roman}
-\linespread{1.15}
-\usepackage[left=0.5in, right=0.5in, top=0.2in, bottom=0.2in]{geometry}
+\linespread{1.08}
+\usepackage[left=0.5in, right=0.5in, top=0.15in, bottom=0.15in]{geometry}
 \usepackage{enumitem}
 \usepackage{titlesec}
 \usepackage{hyperref}
@@ -37,14 +37,14 @@
   \vspace{1pt}\color{navy}\large\bfseries\sffamily
 }{}{0em}{}[{\color{rulecol}\titlerule[0.6pt]}\vspace{1pt}]
 
-\titlespacing*{\section}{0pt}{9pt}{4pt}
+\titlespacing*{\section}{0pt}{6pt}{3pt}
 
 % ── Bullet list ───────────────────────────────────────────────────────────────
 \newlist{rbullet}{itemize}{1}
 \setlist[rbullet]{
   label=\textbullet,
   leftmargin=1.4em,
-  itemsep=1pt,
+  itemsep=0pt,
   parsep=0pt,
   topsep=0pt,
   partopsep=0pt,
@@ -90,9 +90,9 @@
 
 {\textbf{卡内基梅隆大学} \hfill 2025年8月 -- 2026年12月}\\[-2pt]
 {\textit{信息系统管理硕士 (MISM)} \hfill 美国 \quad 匹兹堡}\\[1pt]
-{\small 相关课程：数据分析Python (A)、颠覆性技术管理 (A$-$)、自然语言处理 (B+)、统计学 (A$-$)}\par
+{\small 相关课程：AI模型开发、生产环境机器学习 (ML in Production)、分布式系统、自然语言处理、统计学}\par
 
-\vspace{2pt}
+\vspace{1pt}
 
 {\textbf{南京大学} \hfill 2021年9月 -- 2025年6月}\\[-2pt]
 {\textit{信息管理与信息系统 学士} \hfill 中国 \quad 南京}\\[1pt]
@@ -101,38 +101,35 @@
 % ══ 工作经历 ══════════════════════════════════════════════════════════
 \section{工作经历}
 
-\jobheader{Whelix —— AI机器人初创公司（生物科技方向）}{AI工程师实习生}{2026年5月 -- 至今}{美国 \quad 波士顿}
+\jobheader{Whelix —— AI机器人初创公司（生物科技方向）}{AI工程师实习生}{2026年5月 -- 8月}{美国 \quad 波士顿}
 \begin{rbullet}
-  \item 基于原生 Gemini SDK 从零设计、搭建并上线生产级多智能体 AI 平台，实现编排智能体动态任务委派、权限校验及CEO专属数据智能体功能，完成 Google Cloud Run 部署
-  \item 开发 26 个自定义工具函数，打通 Notion、Confluence、Google Workspace、Jira、Github 五大外部系统，构建双层记忆架构，保障无状态 Webhook 多轮对话上下文连贯
-  \item 通过 Cloud Run 定时触发器，自动化会议纪要归档、议程生成高频流程，独立设计 11 库知识架构方案，整合内部文档形成统一信息系统
-  \item 作为该项目的唯一工程师，直接向Whelix首席执行官（CEO）汇报，独立负责从架构设计到生产部署的全流程
+  \item 基于原生 Gemini SDK 从零设计并交付生产级多智能体（Multi-Agent）AI 平台：架构单一 Orchestrator 主控 Agent，通过专属路由工具（Routing Tool）在运行时动态委派任务至三个专业子 Agent，部署于 Google Cloud Run。
+  \item 构建 Fail-closed 权限校验层，在每一次任务委派时执行重新校验，把关两个仅限 CEO 使用的专属 Agent（负责实时销售 Pipeline 与融资数据）——平台唯一的机密数据访问控制点。
+  \item 通过 \textbf{32} 个自定义工具函数（Tool Functions）打通 Notion、Confluence、GitHub、Google Workspace \textbf{四大}外部系统的结构化数据读写；设计双层记忆架构——实时结构化事实写入 + 基于 GCS 的对话日志存储，并配合每日夜间 LLM 驱动的记忆整合（Reconciliation）——使无状态 Webhook 调用也能维持连贯的多轮对话上下文。
+  \item 设计多智能体 LLM 评估框架（Eval Harness），覆盖 \textbf{28} 个测试用例（故障、注入攻击、任务委派、记忆场景），配合重复试验测试、结构化故障日志与 Eval Bug 排查分级，验证生产环境 Agent 流程工具调用量降低 \textbf{60\%} 以上。
+  \item 独立撰写覆盖 \textbf{11} 个数据库的知识架构方案，将公司分散的内部文档整合为统一的 Single Source of Truth；并通过 Cloud Run 定时触发器（Scheduled Triggers）端到端自动化两项高频公司工作流（会议纪要归档与议程生成）。
 \end{rbullet}
 
-\vspace{2pt}
+\vspace{1pt}
 
 \needspace{6\baselineskip}
 \jobheader{巴斯夫聚氨酯特种产品（中国）有限公司}{数字化转型实习生，亚太区单体事业部}{2024年5月 -- 2025年2月}{中国 \quad 上海}
 \begin{rbullet}
-  \item 发现巴斯夫MDI/TDI定价流程中的一项关键信息缺口：市场分析师需人工监测3--4个跨两种语言的新闻信息源以追踪需求信号，该流程易出错，却直接影响到巴斯夫在中国市场拥有较高定价话语权背景下的定价决策
-  \item 设计并部署了一套\textbf{端到端、基于LLM（GPT-4o）的市场情报引擎}，实现双语新闻监测、信息提取与内容整合的全流程自动化——完全取代人工流程，并直接向定价决策者交付结构化的周报与月报
-  \item 与市场部相关人员紧密合作，确保输出格式符合高层汇报要求，使该工具从上线之初即被采纳使用，彻底消除了团队人工新闻筛选的需求
-  \item 推动了一套工厂设备巡检系统的开发，定期实地走访化工厂并与一线工人直接沟通，确保这一原本纯办公室导向的数字化项目真正贴合实际运营需求
-  \item 统一整合了跨工厂、跨语言的\textbf{技术数据表（Technical Data Sheets）}，提升了多个工厂与地区产品信息的一致性，确保及时更新
-  \item 自动化了\textbf{ICTP}数据的日度与月度更新及预处理流程，为后续业务分析提供可靠、实时的数据基础
-  \item 优化了\textbf{Power BI}销售与分析仪表盘，将复杂数据转化为易于不同业务背景受众理解的清晰呈现形式
-  \item 支持\textbf{8个以上}其他数字化转型项目，涵盖供应链、环境健康安全（EHS）及生产领域，运用Python、KNIME及Power BI，在业务需求与落地技术方案之间承担技术转化角色
+  \item 智能决策支持系统搭建：识别到巴斯夫 MDI/TDI 定价流程中需求信号监测依赖人工跨语言（中英）追踪3–4个信息源，存在高误差风险且拖慢定价决策效率；独立设计并部署基于 GPT-4o 大语言模型的端到端市场情报引擎，实现双语新闻自动监测、关键信息提取与结构化周报/月报全自动化输出，对齐高层汇报标准并推动落地采纳，彻底替代人工新闻筛选流程，直接支撑定价决策、提升定价流程效率与准确性。
+  \item 生产运营数字化落地：深入一线化工厂实地巡检、与操作人员直接沟通，将纯办公室导向的设备巡检系统需求转化为贴合实际作业场景的技术方案；主导跨工厂、跨语言技术数据表（Technical Data Sheets）的统一整合与标准化管理，提升多个工厂与地区产品信息一致性与更新时效性。
+  \item 数据分析与可视化：搭建ICTP数据日度/月度自动更新与预处理管道，为业务分析提供实时、可靠的数据基础；优化Power BI销售与分析仪表盘，通过分层信息架构与可视化设计，降低跨业务背景用户的数据理解门槛。
+  \item 数字化转型跨项目技术赋能：支持8+个数字化转型项目（供应链、EHS、生产等领域），运用Python、KNIME、Power BI等工具，在模糊业务需求与技术实现路径之间完成快速翻译与方案交付，承担业务需求与技术方案落地中的技术转化角色。
  \end{rbullet}
 
-\vspace{2pt}
+\vspace{1pt}
 
 \needspace{6\baselineskip}
 \jobheader{上海宝信软件股份有限公司}{项目实习生}{2024年1月 -- 2月}{中国 \quad 上海}
 \begin{rbullet}
-  \item 基于\textbf{Python/SQLAlchemy}开发一键式数据查询与统计工具，直接满足分析师日常工作流程需求
-  \item 对来自DB2数据库的历史合同与生产数据进行清洗与结构化处理，为后续分析建立可靠的数据基础
-  \item 构建\textbf{决策树}与\textbf{随机森林}模型，提取特征重要性并推导分类规则
-\end{rbullet}
+  \item 数据工程与自动化工具开发：基于Python及SQLAlchemy框架，独立开发自动化一键式数据查询与统计工具，贴合业务分析师日常工作场景与流程需求，封装复杂查询逻辑，实现分析师日常数据需求的标准化、自动化交付，显著提升团队数据处理效率。
+  \item 数据治理与ETL流程建设：负责DB2数据库海量历史合同、生产全量数据的清洗、校验与标准化结构化处理，构建高质量、标准化的数据资产，保障底层数据的准确性、完整性与可用性，为后续深度数据分析、模型训练与业务决策提供高质量数据支撑。
+  \item 机器学习模型搭建与分析：针对多周期业务数据特征，构建决策树、随机森林机器学习算法模型，开展数据特征重要性筛选、模型训练与调优，精准挖掘核心数据特征，量化分析特征重要性权重，推导可落地的业务分类规则，为业务决策、风险研判、流程优化提供数据模型支撑。
+ \end{rbullet}
 
 
 % ══ 精选项目与获奖经历 ══════════════════════════════════════════════
@@ -141,8 +138,7 @@
 \needspace{5\baselineskip}
 \projheader{PromptPrompt：AI驱动的提示词优化工具}{2025年11月 -- 12月}
 \begin{rbullet}
-  \item 为团队课程项目PromptPrompt(一个AI驱动的prompt优化工具)搭建了LLM API接入层——实现了
-对接Groq API的连接器,并将其设计为可扩展支持Gemini/OpenAI/Anthropic等多个后端,服务于
+  \item 搭建了LLM API接入层——实现了对接Groq API的连接器,并将其设计为可扩展支持Gemini/OpenAI/Anthropic等多个后端,服务于
 optimizer多步骤prompt优化调用
   \item 设计并实现了CLI工具的用户认证模块;后续主动提出并推动团队决定砍掉该功能,改用更简化的
 本地API key存储流程,在deadline前优先保证MVP范围精简、可交付,而非堆砌不必要的复杂度
@@ -151,7 +147,7 @@ optimizer多步骤prompt优化调用
   \item 通过消除迭代式重复提问，在30道样例问题的团队内部测试中，将LLM平均Token消耗降低\textbf{65\%}
 \end{rbullet}
 
-\vspace{2pt}
+\vspace{1pt}
 
 \needspace{5\baselineskip}
 \projheader{本科毕业论文：基于决策导向学习的AUUC最大化因果推断方法研究}{2025年2月 -- 5月}
@@ -165,15 +161,7 @@ S-Learner、X-Learner、UpliftRank及广义随机森林(GRF)等基线方法对�
 随机种子下平均AUUC提升超过2\%，并在多组trade-off超参数取值下保持稳定表现
 \end{rbullet}
 
-\vspace{2pt}
-
-\needspace{4\baselineskip}
-\projheader{课程论文：大语言模型提示工程的艺术}{2024年1月}
-\begin{rbullet}
-  \item 撰写了一篇关于提示工程理论与LLM任务应用的独立文献综述（课程项目），将新兴文献系统整理为当前技术与开放挑战的结构化综述
-\end{rbullet}
-
-\vspace{2pt}
+\vspace{1pt}
 
 \needspace{5\baselineskip}
 \projheader{CCF大数据与计算智能大赛 \textnormal{（1,557名参赛者）}}{2023年10月 -- 12月}
@@ -188,40 +176,22 @@ S-Learner、X-Learner、UpliftRank及广义随机森林(GRF)等基线方法对�
   过高的精确最优解
 \end{rbullet}
 
-\vspace{2pt}
+\vspace{1pt}
 
-\needspace{5\baselineskip}
-\projheader{首届社交群体智能算法大赛}{2023年10月 -- 11月}
-\begin{rbullet}
-  \item 从一个包含缺失值与混合数据类型的\textbf{2,500+条}多语言数据集中识别虚假社交媒体账号，应用\textbf{ResNet18}从头像图片中提取特征
-  \item 构建并调优了GBDT、神经网络与Transformer的集成模型，在留出测试集上实现\textbf{超过80\%}的预测准确率
-\end{rbullet}
-
-\vspace{2pt}
-
-% \needspace{6\baselineskip}
-% \projheader{南京大学 研究助理}{2023年9月 -- 2025年6月}
-% \begin{rbullet}
-%   \item 合作撰写了一篇关于\textbf{决策导向学习}的综述论文，独立完成引言与基准测试部分的撰写，并将\textbf{100+篇}论文整理归纳为统一的分类体系
-%   \item 为\textbf{15人}规模的实验室团队提供每周文献分享，综述决策导向学习与现代因果推断方法的最新进展，面向背景各异的听众进行讲解
-% \end{rbullet}
-
-\vspace{2pt}
-
-\needspace{5\baselineskip}
+\needspace{4\baselineskip}
 \projheader{微博搜索热度预测模型研究}{2023年7月 -- 8月}
 \begin{rbullet}
-  \item 独立撰写并发表同行评审论文，预测微博搜索热度（\href{https://doi.org/10.54254/2755-2721/55/20241397}{DOI: 10.54254/2755-2721/55/20241397}），独立完成完整研究流程
-  \item 自主开发Python网络爬虫采集原始社交数据，并使用R进行数据清洗与神经网络建模，预测关键互动特征
+  \item 独立撰写并发表同行评审论文，预测社交媒体热搜话题热度（\href{https://doi.org/10.54254/2755-2721/55/20241397}{DOI: 10.54254/2755-2721/55/20241397}），独立完成从数据采集到建模的完整研究流程。
+  \item 自主开发Python网络爬虫，采集2021年1月–2023年7月微博热搜\textbf{30万+}条原始多维数据；基于R语言构建端到端数据预处理管道，完成缺失值、异常值与噪声数据清洗，产出可分析的结构化数据集。
+  \item 开展相关性分析与特征归因分析，量化拆解热搜热度的核心驱动因子；搭建神经网络预测模型，提升该非线性时间序列问题的热度趋势预测准确性。
 \end{rbullet}
-
 
 % ══ 技术技能 ═════════════════════════════════════════════════════════
 \section{技术技能}
 
 {\small\noindent
-\textbf{数据分析与人工智能：} LLM智能体系统 (LangGraph, AutoGen)、机器学习、增量建模 (Uplift Modeling)、因果推断、自然语言处理、时间序列预测\\[1pt]
-\textbf{技术栈：} Python (Pandas, NumPy, Pytorch, Scikit-learn)、SQL、Power BI、KNIME、R\\[1pt]
+\textbf{数据分析与人工智能：} LLM智能体系统 (LangGraph, LangChain, RAG)、机器学习、增量建模 (Uplift Modeling)、因果推断、自然语言处理、时间序列预测、组合优化\\[0pt]
+\textbf{技术栈：} Python (Pandas, NumPy, Pytorch, Scikit-learn)、SQL、Java、GCP、docker、Power BI、KNIME、R\\[0pt]
 \textbf{语言能力：} 英语（工作水平，雅思7.5）、普通话（母语）、西班牙语（初级）
 }
 
