@@ -1,14 +1,11 @@
 name: Daily Job Screener
 
 on:
-  schedule:
-    # ~Midnight Eastern Time = 04:17 UTC during EDT (summer). Cron is fixed
-    # to UTC, so this runs at ~12:00 AM EDT / 11:00 PM EST -- shift to
-    # "17 5 * * *" if you want it pinned to ~12:00 AM during EST (winter)
-    # instead. Minute offset (:17, not :00) is deliberate -- GitHub Actions
-    # scheduled runs queue up heavily at the top of the hour, so an off-hour
-    # minute avoids most of that delay.
-    - cron: "17 4 * * *"   # Every day
+  # Daily schedule disabled 2026-08-25 -- job search concluded, offer
+  # accepted. Left as manual-only in case it's ever needed again; to
+  # resume daily runs, restore the `schedule:` trigger below:
+  #   schedule:
+  #     - cron: "17 4 * * *"   # ~Midnight Eastern Time (EDT). Use "17 5 * * *" for EST.
 
   # Allow manual trigger from GitHub Actions UI
   workflow_dispatch:
